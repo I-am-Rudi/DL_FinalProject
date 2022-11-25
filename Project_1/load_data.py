@@ -18,10 +18,8 @@ def mnist_to_pairs(nb, input, target):
     target = (classes[:, 0] <= classes[:, 1]).long()
     return input, target, classes
 
-def generate_pair_sets(nb):
-    if args.data_dir is not None:
-        data_dir = args.data_dir
-    else:
+def generate_pair_sets(nb, data_dir=None):
+    if data_dir is None:
         data_dir = os.environ.get('PYTORCH_DATA_DIR')
         if data_dir is None:
             data_dir = './data'
