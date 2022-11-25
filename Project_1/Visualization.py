@@ -16,5 +16,6 @@ def plot_pairs(nb, data, classes, target):
         for col, ax in enumerate(axs):
             ax.imshow(data[row, col, :, :])
             ax.set_title(f'Class: {classes[row, col]}')
+            ax.axis("off")
 
 
