@@ -35,4 +35,5 @@ def generate_pair_sets(nb, data_dir=None):
     return mnist_to_pairs(nb, train_input, train_target) + \
            mnist_to_pairs(nb, test_input, test_target)
 
-######################################################################
+
+
