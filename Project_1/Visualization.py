@@ -24,3 +24,27 @@ def plot_single(data):
         ax.imshow(data[row], cmap="gray")
         ax.set_title('\n', fontsize = 14)
         ax.axis("off")
+
+def plot_analysis(mean, std, epochs, nb_trials):
+
+    fig, ax = plt.subplots(1,1, figsize=(8, 6), dpi = 80)
+    plt.rcParams['font.size'] = '16'
+
+    x = range(1, epochs+1)
+
+    mean0, = ax.plot(x, mean, color="darkblue")
+    std1, = ax.plot(x, mean+std, color="blue", alpha=0.97)
+    std2, = ax.plot(x, mean-std, color="blue", alpha=0.97)
+    fill = ax.fill_between(x, mean+std, mean-std, color="blue", alpha=0.5)
+    
+    print(mean0, std1, std2, fill)
+
+    ax.set_title("Mean and standard deviation of test_accuracy after" + '\n' + "{} runs with {} epochs".format(nb_trials, epochs))
+    ax.set_xlabel("Epochs")
+    ax.set_ylabel("Accuracy")
+    ax.grid()
+    ax.grid(which="minor", linestyle=':', lw=.5)
+    ax.tick_params(axis="both", direction="in", top = True, right=True, which="both")
+    ax.legend([mean0, (std1, fill ,std2)], ["mean", "standard deviation"], prop={"size":14})
+    fig.tight_layout()
+    fig.show()

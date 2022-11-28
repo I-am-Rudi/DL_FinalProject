@@ -9,14 +9,25 @@ import os
 #   functions from dlc_practical_prologue
 ######################################################################
 
-def mnist_to_pairs(nb, input, target):
-    input = torch.functional.F.avg_pool2d(input, kernel_size = 2)
-    a = torch.randperm(input.size(0))
-    a = a[:2 * nb].view(nb, 2)
+def mnist_to_pairs(nb, train, target):
+    input = torch.functional.F.avg_pool2d(train, kernel_size = 2)
+    a = torch.randperm(input.size(0)) #permutation of indices
+    nbTotalPairs = input.size(0)//2 # create maximum number of pairs, we take a specific number at the end
+    a = a[:2 * nbTotalPairs].view(nbTotalPairs, 2)
     input = torch.cat((input[a[:, 0]], input[a[:, 1]]), 1)
     classes = target[a]
-    target = (classes[:, 0] <= classes[:, 1]).long()
-    return input, target, classes
+    
+    # remove situations where numbers are equal from dataset (improves performance slightly (approximately 1-5%))
+    same = (classes[:, 0] != classes[:, 1]).nonzero().flatten()
+
+    pairs = torch.index_select(input, 0, same)[:nb]
+    classes = torch.index_select(classes, 0, same)[:nb]
+
+    # create new targsets (doing it after the removal throws an error if the removal is flawed)
+    target = (classes[:, 0] > classes[:, 1]).long()
+
+    return pairs, target, classes
+
 
 def generate_pair_sets(nb, data_dir=None):
     if data_dir is None:
