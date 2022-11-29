@@ -12,7 +12,7 @@ class plain_model(nn.Module):
         super().__init__()
         ########### helpful parameters ###############
         self.aux = False
-        if BN or DO != None:
+        if not BN and (DO == None):
             self.name = "Simple convolutional network" 
         else:
             self.name = "Improved convolutional network"
@@ -141,7 +141,6 @@ class ws_model(nn.Module):
 class naive_aux_model(nn.Module):
     def __init__(self, lin_layers, activation = nn.ReLU(), out_activation = nn.Sigmoid(), device=None, BN=True, DO=.25):
         super().__init__()
-        
         self.aux = True
         if BN or DO != None:
             self.name = "Weight sharing network (no BN/Dropout)" 

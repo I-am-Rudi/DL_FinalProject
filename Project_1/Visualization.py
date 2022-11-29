@@ -25,7 +25,7 @@ def plot_single(data):
         ax.set_title('\n', fontsize = 14)
         ax.axis("off")
 
-def plot_analysis(mean, std, epochs, nb_trials):
+def plot_analysis(mean, std, epochs, nb_trials, name):
 
     fig, ax = plt.subplots(1,1, figsize=(8, 6), dpi = 80)
     plt.rcParams['font.size'] = '16'
@@ -45,9 +45,12 @@ def plot_analysis(mean, std, epochs, nb_trials):
     ax.tick_params(axis="both", direction="in", top = True, right=True, which="both")
     ax.legend([mean0, (std1, fill ,std2)], ["mean", "standard deviation"], prop={"size":14})
     fig.tight_layout()
-    fig.show()
+    fig.savefig("./Plots/" + "Analysis_" + name ".png")
 
-def plot_comparison(mean1, std1, mean2, std2, epochs, nb_trials, name1, name2):
+def plot_comparison(results1, results2, epochs, nb_trials):
+    
+    name1, mean1, std1 = results1
+    name2, mean2, std2 = results2
     
     fig, ax = plt.subplots(1,1, figsize=(8, 6), dpi = 80)
     plt.rcParams['font.size'] = '16'
@@ -56,7 +59,7 @@ def plot_comparison(mean1, std1, mean2, std2, epochs, nb_trials, name1, name2):
     mean10, = ax.plot(x, mean1, color="darkblue")
     std11, = ax.plot(x, mean1+std1, color="blue", alpha=0.97)
     std12, = ax.plot(x, mean1-std1, color="blue", alpha=0.97)
-    fill1 = ax.fill_between(x, mean1+std1, mean-std, color="blue", alpha=0.5)
+    fill1 = ax.fill_between(x, mean1+std1, mean1-std1, color="blue", alpha=0.5)
 
     mean20, = ax.plot(x, mean2, color="darkorange")
     std21, = ax.plot(x, mean2+std2, color="orange", alpha=0.97)
@@ -71,4 +74,4 @@ def plot_comparison(mean1, std1, mean2, std2, epochs, nb_trials, name1, name2):
     ax.tick_params(axis="both", direction="in", top = True, right=True, which="both")
     ax.legend([(mean10, std11, fill1 ,std12), (mean20, std21, fill2 ,std22)], [name1, name2], prop={"size":14})
     fig.tight_layout()
-    fig.show()
+    fig.savefig("./Plots/" + "Comparison_" + name1 + '_' + name2 ".png")

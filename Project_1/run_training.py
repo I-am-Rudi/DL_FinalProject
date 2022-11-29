@@ -96,8 +96,8 @@ def run_trial(model, epochs, layers, device, batch_size = 50, loss=nn.CrossEntro
 
 def run_analysis(model, nb_trials, epochs, layers, device, batch_size = 50, lr=.1, loss=nn.CrossEntropyLoss(), optimizer_name="SGD", BN=True, DO=.25):
     test_accuracy = []
-
-    print("Training the following architecture:" + '\n', model(layers, BN=BN, DO=DO))
+    name = model(layers, BN=BN, DO=DO).name
+    print("Training {} with the following architecture:".format(name) + '\n', model(layers, BN=BN, DO=DO))
     
     for _ in tqdm(range(nb_trials)):
         test_accuracy.append(run_trial(model, epochs, layers, device, batch_size, loss, optimizer_name, lr, BN, DO))
@@ -105,9 +105,9 @@ def run_analysis(model, nb_trials, epochs, layers, device, batch_size = 50, lr=.
     mean = torch.mean(torch.tensor(test_accuracy), 0)
     std = torch.std(torch.tensor(test_accuracy), 0)
 
-    plot_analysis(mean, std, epochs, nb_trials)
+    plot_analysis(mean, std, epochs, nb_trials, name)
 
-    return mean, std
+    return name, mean, std
     
 
     
