@@ -8,7 +8,7 @@ def plot_pairs(nb, data, classes, target):
     target_str = [r"larger ($>$)", r"smaller or equal ($\leq$)"]
     subfigs = fig.subfigures(nrows=nb, ncols=1)
     for row, subfig in enumerate(subfigs):
-        subfig.suptitle(f'Pair {row} (target: {target_str[int(target[row])]})', fontsize=15)
+        subfig.suptitle(f'Pair {row} (target: {target_str[int(target[row][0])]})', fontsize=15)
 
         axs = subfig.subplots(nrows=1, ncols=2)
         for col, ax in enumerate(axs):
@@ -36,8 +36,6 @@ def plot_analysis(mean, std, epochs, nb_trials):
     std1, = ax.plot(x, mean+std, color="blue", alpha=0.97)
     std2, = ax.plot(x, mean-std, color="blue", alpha=0.97)
     fill = ax.fill_between(x, mean+std, mean-std, color="blue", alpha=0.5)
-    
-    print(mean0, std1, std2, fill)
 
     ax.set_title("Mean and standard deviation of test_accuracy after" + '\n' + "{} runs with {} epochs".format(nb_trials, epochs))
     ax.set_xlabel("Epochs")
@@ -46,5 +44,31 @@ def plot_analysis(mean, std, epochs, nb_trials):
     ax.grid(which="minor", linestyle=':', lw=.5)
     ax.tick_params(axis="both", direction="in", top = True, right=True, which="both")
     ax.legend([mean0, (std1, fill ,std2)], ["mean", "standard deviation"], prop={"size":14})
+    fig.tight_layout()
+    fig.show()
+
+def plot_comparison(mean1, std1, mean2, std2, epochs, nb_trials, name1, name2):
+    
+    fig, ax = plt.subplots(1,1, figsize=(8, 6), dpi = 80)
+    plt.rcParams['font.size'] = '16'
+    x = range(1, epochs+1)
+
+    mean10, = ax.plot(x, mean1, color="darkblue")
+    std11, = ax.plot(x, mean1+std1, color="blue", alpha=0.97)
+    std12, = ax.plot(x, mean1-std1, color="blue", alpha=0.97)
+    fill1 = ax.fill_between(x, mean1+std1, mean-std, color="blue", alpha=0.5)
+
+    mean20, = ax.plot(x, mean2, color="darkorange")
+    std21, = ax.plot(x, mean2+std2, color="orange", alpha=0.97)
+    std22, = ax.plot(x, mean2-std2, color="orange", alpha=0.97)
+    fill2 = ax.fill_between(x, mean2+std2, mean2-std2, color="orange", alpha=0.5)
+
+    ax.set_title("Mean and standard deviation of test_accuracy after" + '\n' + "{} runs with {} epochs".format(nb_trials, epochs))
+    ax.set_xlabel("Epochs")
+    ax.set_ylabel("Accuracy")
+    ax.grid()
+    ax.grid(which="minor", linestyle=':', lw=.5)
+    ax.tick_params(axis="both", direction="in", top = True, right=True, which="both")
+    ax.legend([(mean10, std11, fill1 ,std12), (mean20, std21, fill2 ,std22)], [name1, name2], prop={"size":14})
     fig.tight_layout()
     fig.show()

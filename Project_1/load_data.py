@@ -8,6 +8,10 @@ import os
 ######################################################################
 #   functions from dlc_practical_prologue
 ######################################################################
+def convert_to_one_hot_labels(input, target):
+    tmp = input.new_zeros(target.size(0), target.max() + 1)
+    tmp.scatter_(1, target.view(-1, 1), 1.0)
+    return tmp
 
 def mnist_to_pairs(nb, train, target):
     input = torch.functional.F.avg_pool2d(train, kernel_size = 2)
@@ -18,15 +22,16 @@ def mnist_to_pairs(nb, train, target):
     classes = target[a]
     
     # remove situations where numbers are equal from dataset (improves performance slightly (approximately 1-5%))
-    same = (classes[:, 0] != classes[:, 1]).nonzero().flatten()
+    #same = (classes[:, 0] != classes[:, 1]).nonzero().flatten()
 
-    pairs = torch.index_select(input, 0, same)[:nb]
-    classes = torch.index_select(classes, 0, same)[:nb]
-
+    #pairs = torch.index_select(input, 0, same)[:nb]
+    #classes = torch.index_select(classes, 0, same)[:nb]
+    pairs = input
     # create new targsets (doing it after the removal throws an error if the removal is flawed)
     target = (classes[:, 0] > classes[:, 1]).long()
 
-    return pairs, target, classes
+    target = convert_to_one_hot_labels(pairs, target)
+    return pairs[:nb], target[:nb], classes[:nb]
 
 
 def generate_pair_sets(nb, data_dir=None):

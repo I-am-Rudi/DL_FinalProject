@@ -8,6 +8,17 @@ from Visualization import plot_analysis
 
 from tqdm.notebook import tqdm
 
+def nb_correct(pred, target):
+    """
+    Finds the index of the best pred and the index of the right classification,
+    compares and counts the wrong predictions.
+
+    Returns: number of wrong predictions (Int)
+    """
+    _, pred_index = torch.max(pred, dim=1)
+    _, right_index = torch.max(target, dim=1)
+    right = (pred_index == right_index).sum().item()
+    return right
 
 class teacher():
     def __init__(self, optimizer, loss, device, size=1000):
@@ -20,42 +31,43 @@ class teacher():
         model.train()
         
         num_correct=0
-        for inputs,targets in zip(self.train_data.split(batch_size), self.train_target.split(batch_size)):
-            output = model(inputs)
-            #print(y_hat.size(), x_hat.size(), data.size(), self.train_target.size())
-            loss = self.loss(output, targets)
+        for inputs, targets, classes in zip(self.train_data.split(batch_size), self.train_target.split(batch_size), self.train_classes.split(batch_size)):
+            if model.aux:
+                output, aux1, aux2 = model(inputs)
+                loss = self.loss(output, targets) + self.loss(aux1, classes[:, 0]) + self.loss(aux2, classes[:, 1])
+
+            else:
+                output = model(inputs)
+                #print(y_hat.size(), x_hat.size(), data.size(), self.train_target.size())
+                loss = self.loss(output, targets)
 
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step() 
-            _, predicted = torch.max(output,1)
-            num_correct += (predicted==targets).sum().item()
+            num_correct += nb_correct(output, targets)
         
         model_acc = num_correct/self.train_data.shape[0]
 
         return model_acc
 
-    def test(self, model):
+    def test(self, model, batch_size):
         '''Tests NN performance on test set.'''
         # evaluate model
         model.eval()
-
-        output = model(self.test_data)
-        
-        # no need for batching
-        # compute test loss
-        test_loss = self.loss(output, self.test_target).item()
-        # find most likely prediction
-        pred = output.max(1, keepdim=True)[1] # get the index of the max log-probability
-        # update number of correct predictions
-        correct = pred.eq(self.test_target.view_as(pred)).sum().item()
+        correct = 0
+        for inputs,targets in zip(self.train_data.split(batch_size), self.train_target.split(batch_size)):
+            output = model(inputs)
+            # compute test loss
+            test_loss = self.loss(output, targets).item()
+            # find most likely prediction
+            correct += nb_correct(output, targets)
 
         return test_loss, correct/self.test_data.shape[0]
 
 
-def run_trial(model, epochs, layers, device, batch_size = 50, loss=nn.NLLLoss(), optimizer_name="SGD", lr=.1):
+def run_trial(model, epochs, layers, device, batch_size = 50, loss=nn.CrossEntropyLoss(), optimizer_name="SGD", lr=.1,BN=True, DO=.25):
 
-    NN = model(layers, activation = nn.ReLU(), out_activation = nn.LogSoftmax(dim=1))
+    NN = model(layers, BN=BN, DO=DO)
        
     optimizer = getattr(optim, optimizer_name)(NN.parameters(), lr=lr)
     Teacher = teacher(optimizer, loss, device)
@@ -65,9 +77,9 @@ def run_trial(model, epochs, layers, device, batch_size = 50, loss=nn.NLLLoss(),
     test_accuracy = []
     
 
-    for epoch in tqdm(range(1, epochs+1)):
+    for epoch in range(1, epochs+1):
         train_accuracy.append(Teacher.train(NN, batch_size))
-        test_l, test_acc = Teacher.test(NN)
+        test_l, test_acc = Teacher.test(NN, batch_size)
         test_loss.append(test_l)
         test_accuracy.append(test_acc)
 
@@ -82,16 +94,20 @@ def run_trial(model, epochs, layers, device, batch_size = 50, loss=nn.NLLLoss(),
 
     return test_accuracy
 
-def run_analysis(model, nb_trials, epochs, layers, device, batch_size = 50, loss=nn.NLLLoss(), optimizer_name="SGD", lr=.1):
+def run_analysis(model, nb_trials, epochs, layers, device, batch_size = 50, lr=.1, loss=nn.CrossEntropyLoss(), optimizer_name="SGD", BN=True, DO=.25):
     test_accuracy = []
+
+    print("Training the following architecture:" + '\n', model(layers, BN=BN, DO=DO))
     
-    for _ in range(nb_trials):
-        test_accuracy.append(run_trial(model, epochs, layers, device, batch_size, loss, optimizer_name, lr))
+    for _ in tqdm(range(nb_trials)):
+        test_accuracy.append(run_trial(model, epochs, layers, device, batch_size, loss, optimizer_name, lr, BN, DO))
 
     mean = torch.mean(torch.tensor(test_accuracy), 0)
     std = torch.std(torch.tensor(test_accuracy), 0)
 
     plot_analysis(mean, std, epochs, nb_trials)
+
+    return mean, std
     
 
     
