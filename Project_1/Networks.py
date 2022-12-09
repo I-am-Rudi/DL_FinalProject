@@ -81,8 +81,8 @@ class ws_model(nn.Module):
         super().__init__()
         ########### helpful parameters ###############
         self.aux = False
-        if BN or DO != None:
-            self.name = "Weight sharing network (no BN/Dropout)" 
+        if not BN and (DO == None):
+            self.name = "Simple weight sharing network" 
         else:
             self.name = "Weight sharing network"
 
@@ -142,10 +142,10 @@ class naive_aux_model(nn.Module):
     def __init__(self, lin_layers, activation = nn.ReLU(), out_activation = nn.Sigmoid(), device=None, BN=True, DO=.25):
         super().__init__()
         self.aux = True
-        if BN or DO != None:
-            self.name = "Weight sharing network (no BN/Dropout)" 
+        if not BN and (DO == None):
+            self.name = "Simple auxiliary network" 
         else:
-            self.name = "Weight sharing network"
+            self.name = "Auxiliary network"
 
         ########### setting up blocks ###########
         self.conv = nn.ModuleList()

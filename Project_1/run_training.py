@@ -4,7 +4,7 @@ from torch import nn, optim
 from torch.nn.modules import Module
 import torch.optim as optim
 from load_data import generate_pair_sets
-from Visualization import plot_analysis
+from Visualization import *
 
 from tqdm.notebook import tqdm
 
@@ -96,8 +96,12 @@ def run_trial(model, epochs, layers, device, batch_size = 50, loss=nn.CrossEntro
 
 def run_analysis(model, nb_trials, epochs, layers, device, batch_size = 50, lr=.1, loss=nn.CrossEntropyLoss(), optimizer_name="SGD", BN=True, DO=.25):
     test_accuracy = []
-    name = model(layers, BN=BN, DO=DO).name
-    print("Training {} with the following architecture:".format(name) + '\n', model(layers, BN=BN, DO=DO))
+
+    # use model_struct to get the name, save ONNX file and print out the structure of the current model 
+    # wrapping in function ensures the proper calling of the dummy models destructor before going on with the actual traning
+    
+    name = model_struct(model, layers, BN, DO)
+    
     
     for _ in tqdm(range(nb_trials)):
         test_accuracy.append(run_trial(model, epochs, layers, device, batch_size, loss, optimizer_name, lr, BN, DO))
