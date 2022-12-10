@@ -3,6 +3,8 @@ import pickle
 torch.set_grad_enabled(False) #explicitly enforces expectation for the task 
 
 class Module:
+    def __init__():
+        self.has_params = False
 
     # Defining __call__ method to keep the easy syntax for the forward prop
     def __call__(self, input):
@@ -19,6 +21,8 @@ class Module:
     
 class Linear(Module):
     def __init__(self, in_size, out_size, bias=True):
+        self.has_params = True
+        
         self.w = torch.rand(out_size, in_size)
         
         if bias:
@@ -52,8 +56,8 @@ class Linear(Module):
         return {"type": "Linear", "w": self.dw, "b": self.db} 
 
     def update_params(self, optimizer):
-        self.b -= optimizer.lr/(self.x.shape[0]) * torch.sum(self.db)
-        self.w -= optimizer.lr/(self.x.shape[0]) * torch.sum(self.dw)
+        self.b -= optimizer(self.db, self.x.shape[0])
+        self.w -= optimizer(self.dw, self.x.shape[0])
 
 
 class Sequential(Module):
@@ -66,14 +70,54 @@ class Sequential(Module):
         
         return input
 
-    def backward(self, output, loss): # the loss functions will be initialized with target, they get one parameter as an instance which will be the output
+    def backward(self, loss): # the loss functions will be initialized with target, they get one parameter as an instance which will be the output
         
-        grads = []
+        grads = [1] # makes the Backprop of the loss work even if the ouput layers is not an activation
         self.layers.append(loss)
         self.layers = self.layers[::-1]
         
         for i in range(1, rev_layers):
-            grads.append(self.layers[i].backward(self.layers[i-1], ))
+            grads.append(self.layers[i].backward(self.layers[i-1], grads[i-1]))
+
+        self.layers = self.layers[::-1]
+        self.layers = self.layers[:-1] # reformat the layer variable
+
+        grads = [1:]
+
+        return grads
+
+################################################################
+# Optimizer
+################################################################
+
+class Optimizer(Module):
+    def __init__(self, lr)
+        self.lr = lr
+
+    def update_model(self, model)
+        for layer in model.layers:
+            if layer.has_params:
+                layer.update_params(self) # putting the actual parameter update inside of the class for the layer, should give more flexibility fo adding new types
+
+class SGD(Optimizer):
+    
+    def forward(self, grad, batch_size):
+        return self.lr/batch_size * torch.sum(grad, 0)
+
+################################################################
+# Loss functions
+################################################################
+
+class Loss(Module):
+    def __init__(self, target):
+        self.target = target # I choose this initialization to make the loss compatible with the Backpopagation 
+
+class MSE(Module):
+
+    def forward(self, pred):
+        return (1/pred.size()[0]) * torch.sum(torch.pow(self.target - pred,2))
+
+    def derivative():
 
 ################################################################
 # Activation functions
@@ -82,12 +126,13 @@ class Sequential(Module):
 class Activation(Module):
 
     def backward(self, prev_layer, grad):
-        return  prev_layer.derivative( 0, activation = True)
+        return  prev_layer.derivative(self.x, activation = True)
 
 class ReLU(Activation):
     
     def forward(self, input):
-        return input.apply_(lambda x: max(0, x))
+        self.x = input.apply_(lambda x: max(0, x))
+        return self.x
 
     def derivative(self,input):
         der_bool = (self.forward(input) != torch.tensor([0])) # True if ReLU of x is not zero
@@ -96,7 +141,8 @@ class ReLU(Activation):
 class Sigmoid(Activation):
     
     def forward(self, input):
-        return 1/(1+torch.exp(-input))
+        self.x = 1/(1+torch.exp(-input))
+        return self.x
 
     def derivative(self,input):
         return self.forward(input) * (1 - self.forward(input))
@@ -106,7 +152,8 @@ class Tanh(Activation):
     self.sigmoid = Sigmoid()
 
     def forward(self, input):
-        return 2 * self.sigmoid(2*input) - 1
+        self.x = 2 * self.sigmoid(2*input) - 1
+        return self.x
 
     def derivative(self, input, activation = False):
         if activation:
