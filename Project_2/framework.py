@@ -1,14 +1,14 @@
 import torch 
-import pickle 
-torch.set_grad_enabled(False) #explicitly enforces expectation for the task 
+# import pickle 
+torch.set_grad_enabled(False)  # explicitly enforces expectation for the task 
 
 class Module:
-    def __init__():
+    def __init__(self):
         self.has_params = False
 
     # Defining __call__ method to keep the easy syntax for the forward prop
-    def __call__(self, input):
-        return self.forward(input)
+    def __call__(self, *input):
+        return self.forward(*input)
     
     def forward(self, input):
         raise NotImplementedError
@@ -30,21 +30,18 @@ class Linear(Module):
         else:
             self.b = torch.rand([0])
 
-    def derivative(s, activation=False): # to be clear this is not the derivative of the linear layer it just eliminates the need to check for the existence of an activation
+    def derivative(self, _, activation=False):  # to be clear this is not the derivative of the linear layer it just eliminates the need to check for the existence of an activation
         if activation:
-            return self.w # usual case where architecture: linear->activation 
+            return self.w  # usual case where architecture: linear->activation 
         else:
-            return torch.tensor([1]) # replaces the derivative of the activation if no activation is specified (a(x) = x -> a'(x) = 1)
+            return torch.tensor([1])  # replaces the derivative of the activation if no activation is specified (a(x) = x -> a'(x) = 1)
 
     def forward(self, input):
         """take in the tuple of inputs and return the output of the linear layer as a tuple"""
 
-        self.x = input # store for backward pass
-
-        
-        input = torch.mv(self.w, input)  + self.b
-
-        self.s = input # store for backward pass
+        self.x = input  # store for backward pass
+        input = torch.einsum("jk,ik->ij", self.w, input) + self.b
+        self.s = input  # store for backward pass
 
         return input
     
@@ -62,7 +59,7 @@ class Linear(Module):
 
 class Sequential(Module):
     def __init__(self, *layers):
-        self.layers = layers
+        self.layers = [i for i in layers]
 
     def forward(self, input):
         for layer in self.layers:
@@ -70,34 +67,35 @@ class Sequential(Module):
         
         return input
 
-    def backward(self, loss): # the loss functions will be initialized with target, they get one parameter as an instance which will be the output
+    def backward(self, loss):  # the loss functions will be initialized with target, they get one parameter as an instance which will be the output
         
-        grads = [1] # makes the Backprop of the loss work even if the ouput layers is not an activation
+        grads = [1]  # makes the Backprop of the loss work even if the ouput layers is not an activation
         self.layers.append(loss)
         self.layers = self.layers[::-1]
         
-        for i in range(1, rev_layers):
+        for i in range(1, len(self.layers)):
             grads.append(self.layers[i].backward(self.layers[i-1], grads[i-1]))
 
         self.layers = self.layers[::-1]
-        self.layers = self.layers[:-1] # reformat the layer variable
+        self.layers = self.layers[:-1]  # reformat the layer variable
 
-        grads = [1:]
+        grads = grads[1:]
 
         return grads
+    
+    def update(self, optimizer):
+        for layer in self.layers:
+            if layer.has_params:
+                layer.update_params(optimizer)  # putting the actual parameter update inside of the class for the layer, should give more flexibility fo adding new types
 
 ################################################################
 # Optimizer
 ################################################################
 
 class Optimizer(Module):
-    def __init__(self, lr)
+    def __init__(self, lr):
+        super().__init__()
         self.lr = lr
-
-    def update_model(self, model)
-        for layer in model.layers:
-            if layer.has_params:
-                layer.update_params(self) # putting the actual parameter update inside of the class for the layer, should give more flexibility fo adding new types
 
 class SGD(Optimizer):
     
@@ -110,14 +108,16 @@ class SGD(Optimizer):
 
 class Loss(Module):
     def __init__(self, target):
-        self.target = target # I choose this initialization to make the loss compatible with the Backpopagation 
+        #super().__init__(self)
+        self.target = target  # I choose this initialization to make the loss compatible with the Backpropagation 
 
-class MSE(Module):
+class MSE(Loss):
 
     def forward(self, pred):
-        return (1/pred.size()[0]) * torch.sum(torch.pow(self.target - pred,2))
+        return (1/pred.size()[0]) * torch.sum(torch.pow(pred - self.target, 2))
 
-    def derivative():
+    def derivative(self, pred, activation = False):
+        return 2 * (pred - self.target)
 
 ################################################################
 # Activation functions
@@ -126,7 +126,7 @@ class MSE(Module):
 class Activation(Module):
 
     def backward(self, prev_layer, grad):
-        return  prev_layer.derivative(self.x, activation = True)
+        return prev_layer.derivative(self.x, activation=True)
 
 class ReLU(Activation):
     
@@ -134,9 +134,12 @@ class ReLU(Activation):
         self.x = input.apply_(lambda x: max(0, x))
         return self.x
 
-    def derivative(self,input):
-        der_bool = (self.forward(input) != torch.tensor([0])) # True if ReLU of x is not zero
-        return der_bool + torch.tensor([0]) # only to give back non-boolean tensor explicitly
+    def derivative(self, input, activation = False):
+        if activation:
+            raise Exception("Chaining of two activation functions directly after one another!")
+
+        der_bool = (self.forward(input) != torch.tensor([0]))  # True if ReLU of x is not zero
+        return der_bool + torch.tensor([0])  # only to give back non-boolean tensor explicitly
 
 class Sigmoid(Activation):
     
@@ -144,18 +147,24 @@ class Sigmoid(Activation):
         self.x = 1/(1+torch.exp(-input))
         return self.x
 
-    def derivative(self,input):
+    def derivative(self, input, activation = False):
+        if activation:
+            raise Exception("Chaining of two activation functions directly after one another!")
+        
         return self.forward(input) * (1 - self.forward(input))
 
 class Tanh(Activation):
 
-    self.sigmoid = Sigmoid()
+    def __init__(self):
+        super().__init__()
+        self.sigmoid = Sigmoid()
 
     def forward(self, input):
-        self.x = 2 * self.sigmoid(2*input) - 1
+        self.x = 2 * self.sigmoid(2 * input) - 1
         return self.x
 
     def derivative(self, input, activation = False):
         if activation:
             raise Exception("Chaining of two activation functions directly after one another!")
-        return 4 * self.sigmoid.derivative(2*input) # chain rule  
+        
+        return 4 * self.sigmoid.derivative(2*input)  # chain rule  
