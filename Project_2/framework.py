@@ -1,6 +1,19 @@
+import os
 import torch 
-# import pickle 
+import pickle 
 torch.set_grad_enabled(False)  # explicitly enforces expectation for the task 
+
+
+def load_model(filename, path=None):
+        if path == None:
+            model = pickle.load(open(os.path.join(os.path.curdir, "saved_models", filename + ".pkl")))
+        else:
+            try:
+                model = pickle.load(self, open( path + filename + ".pkl"))
+
+            except:
+                raise Exception("Please enter a valid path when using the optional path argument!")
+        return model
 
 class Module:
     def __init__(self):
@@ -57,8 +70,24 @@ class Linear(Module):
         self.w -= optimizer(self.dw, self.x.shape[0])
 
 
-class Sequential(Module):
+class Model(Module):
+    """Base class for define general models"""
+
+    def __init__(self):
+        self.has_params = True
+    
+    def save(filename, path=None):
+        if path == None:
+            pickle.dump(self, open(os.path.join(os.path.curdir, "saved_models", filename + ".pkl")))
+        else:
+            try:
+                pickle.dump(self, open( path + filename + ".pkl"))
+            except:
+                raise Exception("Please enter a valid path when using the optional path argument!")
+
+class Sequential(Model):
     def __init__(self, *layers):
+        super().__init__()
         self.layers = [i for i in layers]
 
     def forward(self, input):
