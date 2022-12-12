@@ -30,7 +30,12 @@ class Module:
         raise NotImplementedError
     
     def params(self):
-        raise NotImplementedError
+        return []
+
+    def to_device(self, device):
+        if self.has_params:
+            for param in self.params():
+                param = param.to(device)
     
 class Linear(Module):
     def __init__(self, in_size, out_size, bias=True):
@@ -45,7 +50,7 @@ class Linear(Module):
 
     def derivative(self, _, activation=False):  # to be clear this is not the derivative of the linear layer it just eliminates the need to check for the existence of an activation
         if activation:
-            return self.w  # usual case where architecture: linear->activation 
+            return self.w.t()  # usual case where architecture: linear->activation 
         else:
             return torch.tensor([1])  # replaces the derivative of the activation if no activation is specified (a(x) = x -> a'(x) = 1)
 
@@ -57,21 +62,25 @@ class Linear(Module):
         self.s = input  # store for backward pass
 
         return input
-    
+
+    def params(self):
+        return [self.w, self.b]
+
     def backward(self, prev_layer, grad):
-        
         self.db = prev_layer.derivative(self.s) * grad
+        #self.db = torch.einsum("ik,jk->ij", prev_layer.derivative(self.s), grad)
         self.dw = torch.einsum('ik,ij->ikj', self.db, self.x)
 
-        return {"type": "Linear", "w": self.dw, "b": self.db} 
-
+        return self.db
+    def to_device(self, device):
+            self.w = self.w.to(device)
+            self.b = self.b.to(device)
     def update_params(self, optimizer):
-        self.b -= optimizer(self.db, self.x.shape[0])
-        self.w -= optimizer(self.dw, self.x.shape[0])
-
+        self.b -= optimizer(self.db)
+        self.w -= optimizer(self.dw)
 
 class Model(Module):
-    """Base class for define general models"""
+    """Base class for defining general models"""
 
     def __init__(self):
         self.has_params = True
@@ -86,9 +95,13 @@ class Model(Module):
                 raise Exception("Please enter a valid path when using the optional path argument!")
 
 class Sequential(Model):
-    def __init__(self, *layers):
+    def __init__(self, *layers, device = None):
         super().__init__()
-        self.layers = [i for i in layers]
+        self.layers = [layer for layer in layers]
+        if device != None:
+            for layer in self.layers:
+                layer.to_device(device)
+            
 
     def forward(self, input):
         for layer in self.layers:
@@ -98,38 +111,59 @@ class Sequential(Model):
 
     def backward(self, loss):  # the loss functions will be initialized with target, they get one parameter as an instance which will be the output
         
-        grads = [1]  # makes the Backprop of the loss work even if the ouput layers is not an activation
+        grads = [torch.tensor([1]).unsqueeze(1)]  # makes the Backprop of the loss work even if the ouput layers is not an activation
         self.layers.append(loss)
         self.layers = self.layers[::-1]
         
         for i in range(1, len(self.layers)):
-            grads.append(self.layers[i].backward(self.layers[i-1], grads[i-1]))
+            if i == 1:
+                grads.append(self.layers[i].backward(self.layers[i-1], grads[i-1], loss = True))
+            else:
+                grads.append(self.layers[i].backward(self.layers[i-1], grads[i-1]))
+
 
         self.layers = self.layers[::-1]
         self.layers = self.layers[:-1]  # reformat the layer variable
-
         grads = grads[1:]
+        grads = grads[::-1]
+        return grads    
 
-        return grads
-    
     def update(self, optimizer):
         for layer in self.layers:
             if layer.has_params:
                 layer.update_params(optimizer)  # putting the actual parameter update inside of the class for the layer, should give more flexibility fo adding new types
 
+    def params(self):
+        params = []
+        for layer in self.layers:
+            params.append(layer.params)
+        return params
+
+    def to_device(self):
+        for layer in self.layers:
+            if layer.has_params:
+                layer.to_device(device)
 ################################################################
 # Optimizer
 ################################################################
 
 class Optimizer(Module):
-    def __init__(self, lr):
+    def __init__(self, lr, batch_size, device=None):
         super().__init__()
-        self.lr = lr
+        if device != None:
+            self.lr = torch.tensor([lr]).to(device)
+        else:
+            self.lr = torch.tensor([lr])
+        self.has_params = True
+        self.batch_size = batch_size
+    
+    def params(self):
+        return [self.lr]
 
 class SGD(Optimizer):
     
-    def forward(self, grad, batch_size):
-        return self.lr/batch_size * torch.sum(grad, 0)
+    def forward(self, grad):
+        return self.lr/self.batch_size * torch.sum(grad, 0)
 
 ################################################################
 # Loss functions
@@ -146,7 +180,7 @@ class MSE(Loss):
         return (1/pred.size()[0]) * torch.sum(torch.pow(pred - self.target, 2))
 
     def derivative(self, pred, activation = False):
-        return 2 * (pred - self.target)
+        return (2 * (pred - self.target))
 
 ################################################################
 # Activation functions
@@ -154,14 +188,21 @@ class MSE(Loss):
 
 class Activation(Module):
 
-    def backward(self, prev_layer, grad):
-        return prev_layer.derivative(self.x, activation=True)
+    def __call__(self, input):
+        self.x = self.forward(input)
+        return self.x
+
+    def backward(self, prev_layer, grad, loss = False):
+        if loss:
+            return torch.einsum("ik,jk->ij", prev_layer.derivative(self.x, activation=True) ,grad) 
+        else:
+            return torch.einsum("ik,jk->ji", prev_layer.derivative(self.x, activation=True) ,grad) 
 
 class ReLU(Activation):
     
     def forward(self, input):
-        self.x = input.apply_(lambda x: max(0, x))
-        return self.x
+        return input.apply_(lambda x: max(0, x))
+        
 
     def derivative(self, input, activation = False):
         if activation:
@@ -173,8 +214,7 @@ class ReLU(Activation):
 class Sigmoid(Activation):
     
     def forward(self, input):
-        self.x = 1/(1+torch.exp(-input))
-        return self.x
+       return 1/(1+torch.exp(-input))
 
     def derivative(self, input, activation = False):
         if activation:
@@ -189,8 +229,7 @@ class Tanh(Activation):
         self.sigmoid = Sigmoid()
 
     def forward(self, input):
-        self.x = 2 * self.sigmoid(2 * input) - 1
-        return self.x
+        return 2 * self.sigmoid(2 * input) - 1
 
     def derivative(self, input, activation = False):
         if activation:
