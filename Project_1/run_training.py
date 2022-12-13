@@ -55,10 +55,11 @@ class teacher():
         # evaluate model
         model.eval()
         correct = 0
-        for inputs,targets in zip(self.train_data.split(batch_size), self.train_target.split(batch_size)):
+        test_loss = 0
+        for inputs,targets in zip(self.test_data.split(batch_size), self.test_target.split(batch_size)):
             output = model(inputs)
             # compute test loss
-            test_loss = self.loss(output, targets).item()
+            test_loss += self.loss(output, targets).item()
             # find most likely prediction
             correct += nb_correct(output, targets)
 

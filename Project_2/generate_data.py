@@ -2,7 +2,7 @@ import torch
 
 def check_circle(input):
     target = torch.zeros(input.size(0))
-    target += ((torch.pow(input[:, 0] - .5, 2) + torch.pow(input[:, 1] - .5, 2)) <= 1/(torch.tensor(2) * torch.pi))  # avoiding python loop
+    target += ((torch.pow(input[:, 0] - .5, 2) + torch.pow(input[:, 1] - .5, 2)) <= 1/(torch.tensor(2) * torch.pi))  # avoiding python loop, put in the already squared radius to avoid unnecessary operations
     return target
 
 def generate_disc(nb, normalization):

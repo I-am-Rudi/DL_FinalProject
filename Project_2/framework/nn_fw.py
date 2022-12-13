@@ -41,12 +41,12 @@ class Linear(Module):
     def __init__(self, in_size, out_size, bias=True):
         self.has_params = True
         
-        self.w = torch.rand(out_size, in_size)
+        self.w = torch.distributions.uniform.Uniform(0, 1).sample([out_size, in_size])  # torch.rand(out_size, in_size) * torch.sqrt(torch.tensor([2])/in_size)
         
         if bias:
-            self.b = torch.rand(out_size)
+            self.b = torch.distributions.uniform.Uniform(0, 1).sample([out_size]) # torch.rand(out_size) * torch.sqrt(torch.tensor([2])/in_size)
         else:
-            self.b = torch.rand([0])
+            self.b = torch.rand([0]) # change that
 
     def derivative(self, _, activation=False):  # to be clear this is not the derivative of the linear layer it just eliminates the need to check for the existence of an activation
         if activation:
@@ -229,7 +229,7 @@ class Tanh(Activation):
         self.sigmoid = Sigmoid()
 
     def forward(self, input):
-        return 2 * self.sigmoid(2 * input) - 1
+        return 2 * self.sigmoid.forward(2 * input) - 1
 
     def derivative(self, input, activation = False):
         if activation:
