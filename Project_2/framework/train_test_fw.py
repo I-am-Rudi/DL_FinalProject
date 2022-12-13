@@ -20,9 +20,6 @@ def compute_nb_errors(pred, target, one_hot_labels = False):
         wrong = (pred != target).sum().item()
     return wrong
 
-# torch 
-
-
 
 class Teacher():
     def __init__(self, optimizer, loss, data, device, batch_size):
@@ -71,12 +68,9 @@ class Teacher():
 
 
 def run_trial(model, layers, data, epochs, device, batch_size = 50, loss=nn.MSE, optimizer=nn.SGD, lr=.0001, name=""):
-    
-    for layer in layers:
-        if layer.has_params:
-            layer.reset()
 
     NN = model(*layers)
+    NN.to_device(device)
        
     teacher = Teacher(optimizer, loss, data, device, batch_size)
 
@@ -116,7 +110,7 @@ def run_analysis(model, layers, data, nb_trials, epochs, device, name = "framewo
 
     plot_analysis(mean, std, epochs, nb_trials, name)
 
-    return name, mean, std
+    return mean, std
     
 
     

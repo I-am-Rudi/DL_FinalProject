@@ -77,13 +77,13 @@ def plot_comparison(results1, results2, epochs, nb_trials):
     fig.tight_layout()
     fig.savefig("./Plots/" + "Comparison_" + name1.replace(' ', '_') + '_' + name2.replace(' ', '_') + ".png")
 
-def model_struct(model, layers, BN, DO):
+def model_struct(model, layers, BN, DO, device):
     """create a NN from model to print out the basic structure and save
         it as ONNX file for external visualization
     Args:
         model (class): constructor of class model 
     """
-    dummy_input = torch.randn([1, 2, 14, 14], device="cuda")
+    dummy_input = torch.randn([1, 2, 14, 14], device=device)
 
     NN = model(layers, BN=BN, DO=DO)
     name = NN.name

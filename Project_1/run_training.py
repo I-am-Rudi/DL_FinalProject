@@ -34,7 +34,7 @@ class teacher():
         for inputs, targets, classes in zip(self.train_data.split(batch_size), self.train_target.split(batch_size), self.train_classes.split(batch_size)):
             if model.aux:
                 output, aux1, aux2 = model(inputs)
-                loss = self.loss(output, targets) + self.loss(aux1, classes[:, 0]) + self.loss(aux2, classes[:, 1])
+                loss = self.loss(output, targets) + .2 * self.loss(aux1, classes[:, 0]) +  .2 * self.loss(aux2, classes[:, 1])
 
             else:
                 output = model(inputs)
@@ -54,6 +54,7 @@ class teacher():
         '''Tests NN performance on test set.'''
         # evaluate model
         model.eval()
+        
         correct = 0
         test_loss = 0
         for inputs,targets in zip(self.test_data.split(batch_size), self.test_target.split(batch_size)):
@@ -101,7 +102,7 @@ def run_analysis(model, nb_trials, epochs, layers, device, batch_size = 50, lr=.
     # use model_struct to get the name, save ONNX file and print out the structure of the current model 
     # wrapping in function ensures the proper calling of the dummy models destructor before going on with the actual traning
     
-    name = model_struct(model, layers, BN, DO)
+    name = model_struct(model, layers, BN, DO, device)
     
     
     for _ in tqdm(range(nb_trials)):

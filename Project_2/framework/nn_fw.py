@@ -34,13 +34,6 @@ class Module:
     
     def params(self):
         return []
-
-    def to_device(self, device):
-        if self.has_params:
-            for param in self.params():
-                param = param.to(device)
-
-        self.device = device
 class Linear(Module):
     def __init__(self, in_size, out_size, bias=True):
         super().__init__()
@@ -80,6 +73,12 @@ class Linear(Module):
         self.dw = torch.einsum('ik,ij->ikj', self.db, self.x)
         return self.db
     
+    def to_device(self, device):
+        self.w = self.w.to(device)
+        self.b = self.b.to(device)
+
+        self.device = device
+
     def update_params(self, optimizer):
         if self.bias:
             self.b -= optimizer(self.db)
@@ -112,12 +111,14 @@ class Model(Module):
                 raise Exception("Please enter a valid path when using the optional path argument!")
 
 class Sequential(Model):
-    def __init__(self, *layers, device = None):
+    def __init__(self, *layers):
         super().__init__()
         self.layers = [layer for layer in layers]
-        if device != None:
-            for layer in self.layers:
-                layer.to_device(device)
+
+        # in the case of layers being reused I want them to be reset, when initializing a new model with them:
+        for layer in layers:  
+            if layer.has_params:
+                layer.reset()
             
 
     def forward(self, input):
@@ -156,7 +157,7 @@ class Sequential(Model):
             params.append(layer.params)
         return params
 
-    def to_device(self):
+    def to_device(self, device):
         for layer in self.layers:
             layer.to_device(device)
 ################################################################
@@ -177,7 +178,7 @@ class Optimizer(Module):
     def params(self):
         return [self.lr]
     
-    def to_device(self):
+    def to_device(self, device):
         self.lr = self.lr.to(device)
         self.batch_size = self.batch_size.to(device)
         self.device = device
@@ -219,10 +220,13 @@ class Activation(Module):
             return torch.einsum("ik,jk->ij", prev_layer.derivative(self.x, activation=True) ,grad) 
         else:
             return torch.einsum("ik,jk->ji", prev_layer.derivative(self.x, activation=True) ,grad) 
+    def to_device(self, device):
+        self.device = device
+
 class ReLU(Activation):
     
     def forward(self, input):
-        return input.apply_(lambda x: max(0, x))
+        return torch.max(input, torch.zeros_like(input))
         
 
     def derivative(self, input, activation = False):
@@ -235,7 +239,7 @@ class ReLU(Activation):
 class Sigmoid(Activation):
     
     def forward(self, input):
-       return 1/(1+torch.exp(-input))
+        return 1/(1+torch.exp(-input))
 
     def derivative(self, input, activation = False):
         if activation:
