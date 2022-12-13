@@ -70,8 +70,11 @@ class Teacher():
         return test_loss, 1 - num_errors/self.test_data.shape[0]
 
 
-def run_trial(model, layers, data, epochs, device, batch_size = 50, loss=nn.MSE, optimizer=nn.SGD, lr=.0001):
-    layers = (nn.Linear(2, 25), nn.Tanh(), nn.Linear(25, 25), nn.ReLU(), nn.Linear(25, 1), nn.ReLU())
+def run_trial(model, layers, data, epochs, device, batch_size = 50, loss=nn.MSE, optimizer=nn.SGD, lr=.0001, name=""):
+    
+    for layer in layers:
+        if layer.has_params:
+            layer.reset()
 
     NN = model(*layers)
        
@@ -80,7 +83,7 @@ def run_trial(model, layers, data, epochs, device, batch_size = 50, loss=nn.MSE,
     train_accuracy = []
     test_loss = []
     test_accuracy = []
-    
+    best_test_accuracy = 0
 
     for epoch in range(1, epochs+1):
         train_accuracy.append(teacher.train(NN, lr))
@@ -97,13 +100,16 @@ def run_trial(model, layers, data, epochs, device, batch_size = 50, loss=nn.MSE,
             print('Epoch: ', epoch, '/', epochs,', Accuracy(Training): ({:.3f}%), Accuracy(Test): ({:.3f}%)'.format(
                 100. * train_accuracy[epoch-1], 100 * test_accuracy[epoch-1]), end='\r')
 
+    if test_accuracy[-1] > best_test_accuracy:
+        best_test_accuracy = test_accuracy[-1]
+        NN.save("best_model_" + name + '_epochs_{}'.format(epochs))
     return test_accuracy
 
 def run_analysis(model, layers, data, nb_trials, epochs, device, name = "framework", batch_size = 50, lr=.001, loss=nn.MSE, optimizer =nn.SGD ):
     test_accuracy = []
     
     for _ in tqdm(range(nb_trials)):
-        test_accuracy.append(run_trial(model, layers, data, epochs, device, batch_size, loss, optimizer, lr))
+        test_accuracy.append(run_trial(model, layers, data, epochs, device, batch_size, loss, optimizer, lr, name))
 
     mean = torch.mean(torch.tensor(test_accuracy), 0)
     std = torch.std(torch.tensor(test_accuracy), 0)

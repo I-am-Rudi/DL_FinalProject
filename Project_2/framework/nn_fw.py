@@ -6,10 +6,12 @@ torch.set_grad_enabled(False)  # explicitly enforces expectation for the task
 
 def load_model(filename, path=None):
         if path == None:
-            model = pickle.load(open(os.path.join(os.path.curdir, "saved_models", filename + ".pkl")))
+            with open(os.path.join(os.path.curdir, "saved_models", filename + ".pkl"), 'rb') as f:
+                model = pickle.load(f)
         else:
             try:
-                model = pickle.load(self, open( path + filename + ".pkl"))
+                with open(path + filename + ".pkl", "rb") as f:
+                    model = pickle.load(f)
 
             except:
                 raise Exception("Please enter a valid path when using the optional path argument!")
@@ -18,6 +20,7 @@ def load_model(filename, path=None):
 class Module:
     def __init__(self):
         self.has_params = False
+        self.device = None
 
     # Defining __call__ method to keep the easy syntax for the forward prop
     def __call__(self, *input):
@@ -36,11 +39,16 @@ class Module:
         if self.has_params:
             for param in self.params():
                 param = param.to(device)
-    
+
+        self.device = device
 class Linear(Module):
     def __init__(self, in_size, out_size, bias=True):
+        super().__init__()
         self.has_params = True
-        
+        self.in_size = in_size
+        self.out_size = out_size
+        self.bias = bias
+
         self.w = torch.distributions.uniform.Uniform(0, 1).sample([out_size, in_size])  # torch.rand(out_size, in_size) * torch.sqrt(torch.tensor([2])/in_size)
         
         if bias:
@@ -70,27 +78,36 @@ class Linear(Module):
         self.db = prev_layer.derivative(self.s) * grad
         #self.db = torch.einsum("ik,jk->ij", prev_layer.derivative(self.s), grad)
         self.dw = torch.einsum('ik,ij->ikj', self.db, self.x)
-
         return self.db
-    def to_device(self, device):
-            self.w = self.w.to(device)
-            self.b = self.b.to(device)
+    
     def update_params(self, optimizer):
-        self.b -= optimizer(self.db)
+        if self.bias:
+            self.b -= optimizer(self.db)
         self.w -= optimizer(self.dw)
+    
+    def reset(self):
+        self.w = torch.distributions.uniform.Uniform(0, 1).sample([self.out_size, self.in_size])  # torch.rand(out_size, in_size) * torch.sqrt(torch.tensor([2])/in_size)
+        
+        if self.bias:
+            self.b = torch.distributions.uniform.Uniform(0, 1).sample([self.out_size]) # torch.rand(out_size) * torch.sqrt(torch.tensor([2])/in_size)
+
 
 class Model(Module):
     """Base class for defining general models"""
 
     def __init__(self):
+        super().__init__()
         self.has_params = True
     
-    def save(filename, path=None):
+    def save(self, filename, path=None):
         if path == None:
-            pickle.dump(self, open(os.path.join(os.path.curdir, "saved_models", filename + ".pkl")))
+            with open(os.path.join(os.path.curdir, "saved_models", filename + ".pkl"), 'wb') as f:
+                pickle.dump(self, f)
         else:
             try:
-                pickle.dump(self, open( path + filename + ".pkl"))
+                with open( path + filename + ".pkl", 'wb') as f:
+                    pickle.dump(self, f)
+                
             except:
                 raise Exception("Please enter a valid path when using the optional path argument!")
 
@@ -141,8 +158,7 @@ class Sequential(Model):
 
     def to_device(self):
         for layer in self.layers:
-            if layer.has_params:
-                layer.to_device(device)
+            layer.to_device(device)
 ################################################################
 # Optimizer
 ################################################################
@@ -152,13 +168,19 @@ class Optimizer(Module):
         super().__init__()
         if device != None:
             self.lr = torch.tensor([lr]).to(device)
+            self.device = device
         else:
             self.lr = torch.tensor([lr])
         self.has_params = True
-        self.batch_size = batch_size
+        self.batch_size = torch.tensor([batch_size])
     
     def params(self):
         return [self.lr]
+    
+    def to_device(self):
+        self.lr = self.lr.to(device)
+        self.batch_size = self.batch_size.to(device)
+        self.device = device
 
 class SGD(Optimizer):
     
@@ -197,7 +219,6 @@ class Activation(Module):
             return torch.einsum("ik,jk->ij", prev_layer.derivative(self.x, activation=True) ,grad) 
         else:
             return torch.einsum("ik,jk->ji", prev_layer.derivative(self.x, activation=True) ,grad) 
-
 class ReLU(Activation):
     
     def forward(self, input):
