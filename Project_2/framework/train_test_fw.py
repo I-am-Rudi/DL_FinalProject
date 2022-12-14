@@ -16,7 +16,7 @@ def compute_nb_errors(pred, target, one_hot_labels = False):
     
     else:
         pred = torch.round(pred)
-        pred = pred.apply_(lambda x: min(1, x))
+        pred = torch.min(pred, torch.ones_like(pred))
         wrong = (pred != target).sum().item()
     return wrong
 
@@ -29,6 +29,7 @@ class Teacher():
         self.train_data, self.train_target, self.test_data, self.test_target = data
         self.train_data, self.train_target, self.test_data, self.test_target = self.train_data.to(device), self.train_target.to(device), self.test_data.to(device), self.test_target.to(device)
         self.batch_size = batch_size
+        self.device = device
 
     def train(self, model, lr):
         
@@ -38,6 +39,8 @@ class Teacher():
             output = model(inputs)
 
             optim = nn.SGD(lr, inputs.shape[0])
+            optim.to_device(self.device)
+
             loss = nn.MSE(targets)
             
             grads = model.backward(loss)

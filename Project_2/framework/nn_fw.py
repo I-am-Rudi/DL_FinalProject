@@ -20,7 +20,7 @@ def load_model(filename, path=None):
 class Module:
     def __init__(self):
         self.has_params = False
-        self.device = None
+        self.device = torch.device('cpu')
 
     # Defining __call__ method to keep the easy syntax for the forward prop
     def __call__(self, *input):
@@ -129,7 +129,7 @@ class Sequential(Model):
 
     def backward(self, loss):  # the loss functions will be initialized with target, they get one parameter as an instance which will be the output
         
-        grads = [torch.tensor([1]).unsqueeze(1)]  # makes the Backprop of the loss work even if the ouput layers is not an activation
+        grads = [torch.tensor([1]).unsqueeze(1).to(self.device)]  # makes the Backprop of the loss work even if the ouput layers is not an activation
         self.layers.append(loss)
         self.layers = self.layers[::-1]
         
@@ -160,6 +160,7 @@ class Sequential(Model):
     def to_device(self, device):
         for layer in self.layers:
             layer.to_device(device)
+        self.device = device
 ################################################################
 # Optimizer
 ################################################################
@@ -167,11 +168,7 @@ class Sequential(Model):
 class Optimizer(Module):
     def __init__(self, lr, batch_size, device=None):
         super().__init__()
-        if device != None:
-            self.lr = torch.tensor([lr]).to(device)
-            self.device = device
-        else:
-            self.lr = torch.tensor([lr])
+        self.lr = torch.tensor([lr])
         self.has_params = True
         self.batch_size = torch.tensor([batch_size])
     
@@ -196,7 +193,6 @@ class Loss(Module):
     def __init__(self, target):
         #super().__init__(self)
         self.target = target  # I choose this initialization to make the loss compatible with the Backpropagation 
-
 class MSE(Loss):
 
     def forward(self, pred):
@@ -217,9 +213,9 @@ class Activation(Module):
 
     def backward(self, prev_layer, grad, loss = False):
         if loss:
-            return torch.einsum("ik,jk->ij", prev_layer.derivative(self.x, activation=True) ,grad) 
+            return torch.einsum("ik,jk->ij", prev_layer.derivative(self.x, activation=True), grad) 
         else:
-            return torch.einsum("ik,jk->ji", prev_layer.derivative(self.x, activation=True) ,grad) 
+            return torch.einsum("ik,jk->ji", prev_layer.derivative(self.x, activation=True), grad) 
     def to_device(self, device):
         self.device = device
 
@@ -233,8 +229,8 @@ class ReLU(Activation):
         if activation:
             raise Exception("Chaining of two activation functions directly after one another!")
 
-        der_bool = (self.forward(input) != torch.tensor([0]))  # True if ReLU of x is not zero
-        return der_bool + torch.tensor([0])  # only to give back non-boolean tensor explicitly
+        der_bool = (self.forward(input) != torch.tensor([0]).to(self.device))  # True if ReLU of x is not zero
+        return der_bool + torch.tensor([0]).to(self.device)  # only to give back non-boolean tensor explicitly
 
 class Sigmoid(Activation):
     
