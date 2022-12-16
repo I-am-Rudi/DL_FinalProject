@@ -8,43 +8,83 @@ from Visualization import *
 
 from tqdm.notebook import tqdm
 
-def nb_correct(pred, target):
-    """
-    Finds the index of the best pred and the index of the right classification,
-    compares and counts the wrong predictions.
+import os
+import pickle
 
+
+def res_save(result, filename, path=None):
+    filename = filename.replace(" ", "_")
+    if path == None:
+            with open(os.path.join(os.path.curdir, "results", filename + ".pkl"), 'wb') as f:
+                pickle.dump(result, f)
+    else:
+        try:
+            with open( path + filename + ".pkl", 'wb') as f:
+                pickle.dump(result, f)
+            
+        except:
+            raise Exception("Please enter a valid path when using the optional path argument!")
+
+def res_model(filename, path=None):
+    if path == None:
+        with open(os.path.join(os.path.curdir, "results", filename + ".pkl"), 'rb') as f:
+            result = pickle.load(f)
+    else:
+        try:
+            with open(path + filename + ".pkl", "rb") as f:
+                result = pickle.load(f)
+
+        except:
+            raise Exception("Please enter a valid path when using the optional path argument!")
+    return result
+
+
+def nb_correct(pred, target, one_hot_labels = True):
+    """
     Returns: number of wrong predictions (Int)
     """
-    _, pred_index = torch.max(pred, dim=1)
-    _, right_index = torch.max(target, dim=1)
-    right = (pred_index == right_index).sum().item()
-    return right
 
-class teacher():
-    def __init__(self, optimizer, loss, device, size=1000):
+    if one_hot_labels:
+        _, pred_index = torch.max(pred, 1)
+        _, right_index = torch.max(target, 1)
+        wrong = (pred_index == right_index).sum().item()
+    
+    else:
+        pred = torch.round(pred)  
+        pred = torch.min(pred, torch.ones_like(pred)) # count overshooting one as one
+        wrong = (pred == target).sum().item()
+    return wrong
+
+class Teacher():
+    def __init__(self, optimizer, loss, device, one_hot_labels, size=1000):
         self.optimizer = optimizer
         self.loss = loss
-        self.train_data, self.train_target, self.train_classes, self.test_data, self.test_target, self.test_classes = generate_pair_sets(size)
+        self.train_data, self.train_target, self.train_classes, self.test_data, self.test_target, self.test_classes = generate_pair_sets(size, one_hot_labels=one_hot_labels)
         self.train_data, self.train_target, self.train_classes, self.test_data, self.test_target, self.test_classes = self.train_data.to(device), self.train_target.to(device), self.train_classes.to(device), self.test_data.to(device), self.test_target.to(device), self.test_classes.to(device)
+        self.one_hot_labels = one_hot_labels
 
     def train(self, model, batch_size):
         model.train()
-        
         num_correct=0
         for inputs, targets, classes in zip(self.train_data.split(batch_size), self.train_target.split(batch_size), self.train_classes.split(batch_size)):
-            if model.aux:
+            if (model.is_aux and model.is_classes):  # avoiding nested if statement
                 output, aux1, aux2 = model(inputs)
-                loss = self.loss(output, targets) + .2 * self.loss(aux1, classes[:, 0]) +  .2 * self.loss(aux2, classes[:, 1])
+                if self.one_hot_labels:
+                    loss =  self.loss(output, targets) + .2 * self.loss(aux1, classes[:, 0]) +  .2 * self.loss(aux2, classes[:, 1])
+                else:    
+                    loss =  self.loss(output, targets) + .2 * self.loss(aux1, classes[:, 0].squeeze().float()) +  .2 * self.loss(aux2, classes[:, 1].squeeze().float())
 
+            elif (model.is_aux):
+                output, aux1 = model(inputs)
+                loss = self.loss(output, targets) + .2 * self.loss(aux1, targets)
             else:
                 output = model(inputs)
-                #print(y_hat.size(), x_hat.size(), data.size(), self.train_target.size())
                 loss = self.loss(output, targets)
 
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step() 
-            num_correct += nb_correct(output, targets)
+            num_correct += nb_correct(output, targets, one_hot_labels = self.one_hot_labels)
         
         model_acc = num_correct/self.train_data.shape[0]
 
@@ -62,26 +102,27 @@ class teacher():
             # compute test loss
             test_loss += self.loss(output, targets).item()
             # find most likely prediction
-            correct += nb_correct(output, targets)
+            correct += nb_correct(output, targets, one_hot_labels = self.one_hot_labels)
 
         return test_loss, correct/self.test_data.shape[0]
 
 
-def run_trial(model, epochs, layers, device, batch_size = 50, loss=nn.CrossEntropyLoss(), optimizer_name="SGD", lr=.1,BN=True, DO=.25):
+def run_trial(model, epochs, layers, device, name, batch_size = 50, loss=nn.CrossEntropyLoss(), optimizer_name="SGD", lr=.1, one_hot_labels=True, fconv=False):
 
-    NN = model(layers, BN=BN, DO=DO)
+    NN = model(layers, one_hot_labels=one_hot_labels, fconv=fconv)
        
     optimizer = getattr(optim, optimizer_name)(NN.parameters(), lr=lr)
-    Teacher = teacher(optimizer, loss, device)
+    teacher = Teacher(optimizer, loss, device, one_hot_labels)
 
     train_accuracy = []
     test_loss = []
     test_accuracy = []
+    best_test_accuracy = 0
     
 
     for epoch in range(1, epochs+1):
-        train_accuracy.append(Teacher.train(NN, batch_size))
-        test_l, test_acc = Teacher.test(NN, batch_size)
+        train_accuracy.append(teacher.train(NN, batch_size))
+        test_l, test_acc = teacher.test(NN, batch_size)
         test_loss.append(test_l)
         test_accuracy.append(test_acc)
 
@@ -94,19 +135,18 @@ def run_trial(model, epochs, layers, device, batch_size = 50, loss=nn.CrossEntro
             print('Epoch: ', epoch, ', Accuracy(Training): ({:.3f}%), Accuracy(Test): ({:.3f}%)'.format(
                 100. * train_accuracy[epoch-1], 100 * test_accuracy[epoch-1]), end='\r')
 
+    if test_accuracy[-1] > best_test_accuracy:  # only for plotting of architesture
+        best_test_accuracy = test_accuracy[-1]
+        NN.save("best_model_" + name.replace(" ", "_") + '_epochs_{}'.format(epochs))
+
     return test_accuracy
 
-def run_analysis(model, nb_trials, epochs, layers, device, batch_size = 50, lr=.1, loss=nn.CrossEntropyLoss(), optimizer_name="SGD", BN=True, DO=.25):
+def run_analysis(model, nb_trials, epochs, layers, device, name, batch_size = 50, lr=.1, loss=nn.CrossEntropyLoss(), optimizer_name="SGD", one_hot_labels=True, fconv=False):
     test_accuracy = []
-
-    # use model_struct to get the name, save ONNX file and print out the structure of the current model 
-    # wrapping in function ensures the proper calling of the dummy models destructor before going on with the actual traning
-    
-    name = model_struct(model, layers, BN, DO, device)
     
     
     for _ in tqdm(range(nb_trials)):
-        test_accuracy.append(run_trial(model, epochs, layers, device, batch_size, loss, optimizer_name, lr, BN, DO))
+        test_accuracy.append(run_trial(model, epochs, layers, device, name, batch_size, loss, optimizer_name, lr, one_hot_labels, fconv))
 
     mean = torch.mean(torch.tensor(test_accuracy), 0)
     std = torch.std(torch.tensor(test_accuracy), 0)

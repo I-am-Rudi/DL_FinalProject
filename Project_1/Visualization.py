@@ -76,25 +76,4 @@ def plot_comparison(results1, results2, epochs, nb_trials):
     ax.legend([(mean10, std11, fill1 ,std12), (mean20, std21, fill2 ,std22)], [name1, name2], prop={"size":14})
     fig.tight_layout()
     fig.savefig("./Plots/" + "Comparison_" + name1.replace(' ', '_') + '_' + name2.replace(' ', '_') + ".png")
-
-def model_struct(model, layers, BN, DO, device):
-    """create a NN from model to print out the basic structure and save
-        it as ONNX file for external visualization
-    Args:
-        model (class): constructor of class model 
-    """
-    dummy_input = torch.randn([1, 2, 14, 14], device=device)
-
-    NN = model(layers, BN=BN, DO=DO)
-    name = NN.name
-    
-    NN.train()
-    input_names = ["MNIST Number (Input 1)", "MNIST Number (Input 2)"]
-    output_names = ["Prediction (larger or smaller/equal)"]
-
-    torch.onnx.export(NN, dummy_input, "./ONXX/" + name.replace(" ", "_") + ".onnx", input_names=input_names, output_names=output_names)
-
-    print("Training {} with the following architecture:".format(name) + '\n', model(layers, BN=BN, DO=DO))
-
-    return name
 # %%

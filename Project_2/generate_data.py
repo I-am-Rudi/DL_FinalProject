@@ -14,11 +14,6 @@ def generate_disc(nb, normalization):
         input /= input.std()
     return input, target
 
-def convert_to_one_hot_labels(input, target):
-    tmp = input.new_zeros(target.size(0), target.max() + 1)
-    tmp.scatter_(1, target.view(-1, 1), 1.0)
-    return tmp
-
 def generate_disc_set(nb, split= .7, normalization=False, one_hot_labels=False):
     input, target = generate_disc(nb, normalization)
     input, target = input, target.unsqueeze(1)
