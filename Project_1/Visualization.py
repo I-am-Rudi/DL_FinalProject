@@ -4,12 +4,13 @@ import torch
 
 # %%
 def plot_pairs(nb, data, classes, target):
-    fig = plt.figure(constrained_layout=True, figsize=(8, 4*nb))
+    fig = plt.figure(constrained_layout=True, figsize=(5, 2.5*nb))
     fig.suptitle('Visualization of pair selection.' + '\n', fontsize=16)
     target_str = [r"larger ($>$)", r"smaller or equal ($\leq$)"]
     subfigs = fig.subfigures(nrows=nb, ncols=1)
+    classes = torch.cat((torch.argmax(classes[:, 0], 1).unsqueeze(1), torch.argmax(classes[:, 1], 1).unsqueeze(1)), 1) 
     for row, subfig in enumerate(subfigs):
-        subfig.suptitle(f'Pair {row} (target: {target_str[int(target[row][0])]})', fontsize=15)
+        subfig.suptitle(f'Pair {row + 1} (target: {target_str[int(target[row][0])]})', fontsize=15)
 
         axs = subfig.subplots(nrows=1, ncols=2)
         for col, ax in enumerate(axs):

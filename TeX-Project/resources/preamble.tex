@@ -138,11 +138,49 @@ scientific-notation=true,
 \thiswatermark{\centering \put(326.5,-68.0){\includegraphics[scale=1.2]{sciences_en.png}}}
 
 \usepackage{abstract}
-\newcommand{\myabstract}[1]{
-\twocolumn[
-  \maketitle             % full width title
-  \begin{onecolabstract} % ditto abstract
-    {#1}
-  \end{onecolabstract}
-\vspace{\baselineskip}
-]}
+
+
+\makeatletter  % redefining numbering of section 
+\def\section{\@ifstar\unnumberedsection\numberedsection}
+\def\numberedsection{\@ifnextchar[%]
+	\numberedsectionwithtwoarguments\numberedsectionwithoneargument}
+\def\unnumberedsection{\@ifnextchar[%]
+	\unnumberedsectionwithtwoarguments\unnumberedsectionwithoneargument}
+\def\numberedsectionwithoneargument#1{\numberedsectionwithtwoarguments[#1]{#1}}
+\def\unnumberedsectionwithoneargument#1{\unnumberedsectionwithtwoarguments[#1]{#1}}
+\def\numberedsectionwithtwoarguments[#1]#2{%
+	\ifhmode\par\fi
+	\removelastskip
+	\vskip 3ex\goodbreak
+	\refstepcounter{section}%
+	\noindent
+	\begingroup
+	\leavevmode\Large\bfseries\raggedright
+	#2
+	\arabic{section}
+	\par
+	\endgroup
+	\vskip 2ex\nobreak
+	\addcontentsline{toc}{section}{%
+		\protect\numberline{\thesection}% ToC entry
+		#1}%
+}
+\def\unnumberedsectionwithtwoarguments[#1]#2{%
+	\ifhmode\par\fi
+	\removelastskip
+	\vskip 3ex\goodbreak
+	%  \refstepcounter{section}%
+	\noindent
+	\begingroup
+	\leavevmode\Large\bfseries\raggedright
+	\leavevmode\Large\bfseries\raggedright
+	#2
+	% \arabic{section}
+	\par
+	\endgroup
+	\vskip 2ex\nobreak
+	\addcontentsline{toc}{section}{%
+		%    \protect\numberline{\thesection}% ToC entry
+		#1}%
+}
+\makeatother
