@@ -2355,6 +2355,8 @@
     <bcf:citekey order="1">Fleuret2022</bcf:citekey>
     <bcf:citekey order="2">Szegedy2014</bcf:citekey>
     <bcf:citekey order="3">Fleuret2022</bcf:citekey>
+    <bcf:citekey order="3">Goodfellow-et-al-2016</bcf:citekey>
+    <bcf:citekey order="4">Fleuret2022</bcf:citekey>
     <bcf:citekey order="4">Goodfellow-et-al-2016</bcf:citekey>
   </bcf:section>
   <!-- SORTING TEMPLATES -->

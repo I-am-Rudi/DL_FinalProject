@@ -222,12 +222,24 @@
 	\section{Project} \label{sec:Proj2}
 	\vspace{-10pt}
 	
-	\subsection{Introduction}
+	\subsection{Introduction} \label{ssec:Intro2}
 	The goal of this project is to create a framework for constructing neural networks. Here, only the tensor functionalities of the PyTorch library should be used, especially not making use of the \lstinline|torch.nn| module and the autograd functions of Pytorch.
 	
 	There are five modules that are required to be implemented: Linear (fully connected layer), ReLU, Tanh, Sequential and LossMSE.
 	
-	\subsection{The framework}
+	To test the framework, a model with 2 input neurons at least three hidden layers of 25 neurons and 1 output neuron is created and trained on a test dataset. 
+	
+	The dataset used for testing is a standard choice in machine learning. Points are created uniformly over a subspace of $\mathbb{R}$ then all points inside a specified circle are classified as target 1 and outside the circle they are classified as target 0. For this project the circle is specified to have a radius of $\frac{1}{\sqrt{2 \pi}}$ centered at $x=0.5$ and $y=0.5$. The subspace is chosen to be $[0, 1]^2$. An example of the created dataset is visualized in \cref{fig:circleset}
+	
+	\begin{figure}
+		\centering
+		\includegraphics[width = .85\textwidth]{
+			circleset.png}
+		\caption{Test dataset for Project 2. Points inside a circle of radius $\frac{1}{\sqrt{2 \pi}}$ centered at $x=0.5$ and $y=0.5$ are classified as target 1 and outside the circle they are classified as target 0. Points are uniformly generated over $[0, 1]^2$.}
+		\label{fig:circleset}
+	\end{figure}  
+	
+	\subsection{The framework} \label{ssec:framework}
 	
 	\subsubsection{Base}
 	
@@ -321,7 +333,9 @@
 	
 	All Modules posses a method \lstinline|to_device| which transfers all their parameters to the specified device and changes the parameter \lstinline|Module.device| to the specified device and therefore enabling CUDA support for the framework. All Modules posses a forward and a backward method except for \lstinline|Loss| and \lstinline|Optimizer|. All classes that can act as layers of a network and the loss are implemented with a method that returns their derivative.
 	
-	The forward propagation for the modules is fairly straight forward as the definitions of the required functions are well known and can just be translated into code from the literature \cite{Fleuret2022,Goodfellow-et-al-2016}. With the only addition that the respective results are stored inside the class object for later use in the backward pass. Two forward methods might be worth mentioning. For the Tanh it is implemented using a second class for Sigmoid as they are closely related and then the Sigmoid function is implemented two without additional effort.
+	\subsubsection*{Forward pass}
+	
+	The forward pass for the modules is fairly straight forward as the definitions of the required functions are well known and can just be translated into code from the literature \cite{Fleuret2022,Goodfellow-et-al-2016}. With the only addition that the respective results are stored inside the class object for later use in the backward pass. Two forward methods might be worth mentioning. For the Tanh it is implemented using a second class for Sigmoid as they are closely related and then the Sigmoid function is implemented too without additional effort.
 	
 	\begin{lstlisting}
 		class Sigmoid(Activation):
@@ -351,7 +365,8 @@
 		return 4 * self.sigmoid.derivative(2*input)  # chain rule  
 	\end{lstlisting}
 	
-	And the forward call of Sequential, which just consists of calling all the layers forward calls one after the other.
+	And the forward propagation of Sequential, which is just the chaining of 
+	all the individual forward calls.
 	
 	\begin{lstlisting}
 		def forward(self, input):
@@ -408,6 +423,57 @@
 		return grads
 	\end{lstlisting}
 	
-	After the g
+	After the gradient is calculated the models parameters need to be updated. As \lstinline|Linear| is the only layer with parameters in this example, the \lstinline|update_params| function is implemented for this module:
+	
+	\begin{lstlisting}
+		def update_params(self, optimizer):
+		if self.bias:
+		self.b -= optimizer(self.db)
+		self.w -= optimizer(self.dw)
+	\end{lstlisting}
+	
+	The model \lstinline|Sequential| has a method \lstinline|update_params| which calls the \lstinline|update_params| of all layers with parameters (i.e. only linear layers in this case).
+	
+	Which concludes the basic tools needed to build a simple sequential neural network.
+	
+	\section{Training} \label{ssec:Training}
+	
+	Inside of every training function there is the sequence of calculating the output and doing backward pass and updates. In this framework as specified in \cref{ssec:framework} this sequence is:
+	
+	\begin{lstlisting}
+		output = model(inputs)
+		
+		optim = nn.SGD(lr, inputs.shape[0])
+		optim.to_device(self.device)
+		
+		loss = nn.MSE(targets)
+		
+		grads = model.backward(loss)
+		model.update(optim)
+	\end{lstlisting} 
+	
+	The framework was set up in a way such that whenever parameters inside the model are changed during training, this is done by a method of the model itself to stay in line with the usual conventions of object oriented programming. As opposed to \lstinline|torch.nn| where the backward pass is performed by the loss function object and the update is performed by the optimizer object.
+	
+	The \lstinline|Teacher| class as well as the \lstinline|run_analysis| function are reused from Project 1 in a slightly modified form.
+	
+	The Model is trained for \lstinline|50000| epochs with a learning rate of \lstinline|0.0001| and a batch size of \lstinline|100| for a total of 50 trials to estimate the mean an standard deviation. The used architecture is just using the requirements as described in \cref{Info2} exactly, with Tanh as the first activation function and ReLU for the rest (as this showed the most promising learning behaviour for small numbers of epochs).
+	
+	The loss is the MSE loss and the optimizer is SGD.
+	
+	\subsection{Results}
+	
+	The network could be created and moved to the GPU. With the Training setup as in \cref{ssec:Training} the network took a large of epochs but reached a relatively high accuracy. The development of the test accuracy can be seen in \cref{fig:analysis_tanh}
+	
+	\begin{figure}
+		\centering
+		\includegraphics[width = \textwidth]{Analysis_Tanh.png}
+		\caption{Plot of the mean and standard deviation for the test accuracy of the network after of the network after training for \lstinline|50000| epochs with a learning rate of \lstinline|0.0001| and a batch size of \lstinline|100| for a total of 50 trials.}
+		\label{fig:analysis_tanh}
+	\end{figure} 
+	
+	\subsection{Conclusion}
+	A framework including all of the required function was implemented. Using this framework a network meeting the requirements laid down in \cref{ssec:Intro2} was created. The network needed a large number of epochs to perform reasonably well on the test set but was able to reach a relatively high degree of accuracy.
+	
+	
 	\printbibliography
 \end{document}
