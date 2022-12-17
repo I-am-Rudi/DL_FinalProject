@@ -30,11 +30,11 @@
 
 
 	\subsection{Architectures} \label{ssec:Architectures}
-	For the structure of the networks, four variable architectures where chosen. For all architectures there is one one version which starts with several convolutional and Batchnorm layers and is followed by linear layers, another which is fully convolutional and every architecture has the possibility to switch between several or one output neuron depending on whether one hot encoded labels are used. 
+	For the structure of the networks, four variable architectures where chosen. For all architectures there is one one version which starts with several convolutional and Batchnorm layers and is followed by linear layers, another which is fully convolutional and every architecture has the possibility to switch between several or one output neuron depending on whether one-hot encoded labels are used. 
 	
 	The fully convolutional networks are created on the basis of the mixed networks at initialization through the function \lstinline|convolutionize| which is based on the \lstinline|convolutionize| function \cite{Fleuret2022} defined in the lectures. They are not transformed after training but at initialization so they are trained as fully convolutional networks. From this point on not calling  \lstinline|convolutionize| will be the norm for project one. Whenever fully covolutional networks are used it will be explicitly specified.
 	
-	One hot encoding is specified through the variable \lstinline|one_hot_encoding| at initialization and is enabled for all additional functions by the same variable. From this point on one hot encoding will be the norm for project one. Whenever one hot encoding is turned of it will be explicitly specified.
+	One-hot encoding is specified through the variable \lstinline|one_hot_encoding| at initialization and is enabled for all additional functions by the same variable. From this point on one-hot encoding will be the norm for project one. Whenever one-hot encoding is turned of it will be explicitly specified.
 	
 	All architectures use ReLU as their internal activation functions and Sigmoid as their output activation. All models are initialized with 64, 64 and 32 for the number of neurons in the main branch for the hidden Linear layers.
 	
@@ -80,13 +80,13 @@
 	
 	\subsection{Training}
 	
-	All the Architectures were trained for 100 epochs, which was repeated for 150 times while logging the test accuracy to calculate the mean values and standard deviation for the results of that experiment. The actual Training and testing is performed by the \lstinline|Teacher| class which stores the train and test data and whose methods are the actual train and test function of the model. The whole process for the analysis is performed by the \lstinline|run_analysis| function which returns the name of the model input, the mean and the standard deviation for use in further analysis or visualization. All models with one hot encoding where trained using the \lstinline|CrossEntropyLoss| optimizer and all the models without one hot encoding where trained using the \lstinline|MSELoss| optimizer.
+	All the Architectures were trained for 100 epochs, which was repeated for 150 times while logging the test accuracy to calculate the mean values and standard deviation for the results of that experiment. The actual Training and testing is performed by the \lstinline|Teacher| class which stores the train and test data and whose methods are the actual train and test function of the model. The whole process for the analysis is performed by the \lstinline|run_analysis| function which returns the name of the model input, the mean and the standard deviation for use in further analysis or visualization. All models with one-hot encoding where trained using the \lstinline|CrossEntropyLoss| optimizer and all the models without one-hot encoding where trained using the \lstinline|MSELoss| optimizer.
 	
 	All models where trained with a learning rate of \lstinline|0.01| and a batch size of \lstinline|50|. These parameters remained fixed for the whole analysis in project one to keep the results as comparable as possible.
   	
-  	\subsection{Results}
+  	\subsection{Results} \label{ssec:Results1}
   	
-  	As a starting point the different architectures are compared in their standard forms (one hot encoding and not fully convolutional) as specified in \cref{ssec:Architectures}. The results of this comparison can be seen in \cref{fig:comp_normal-normal}. \Cref{fig:normal-normal:sn-ws} shows the WSN performing better on average than the SN. not only does it reach a higher value at the end of the training, it also as a steeper slope for the evolution of the test accuracy. This development is consistent with the ideas behind the WSN eplained in \cref{ssec:Architectures}. 
+  	As a starting point the different architectures are compared in their standard forms (one-hot encoding and not fully convolutional) as specified in \cref{ssec:Architectures}. The results of this comparison can be seen in \cref{fig:comp_normal-normal}. \Cref{fig:normal-normal:sn-ws} shows the WSN performing better on average than the SN. not only does it reach a higher value at the end of the training, it also as a steeper slope for the evolution of the test accuracy. This development is consistent with the ideas behind the WSN eplained in \cref{ssec:Architectures}. 
   	
   	The WSN is then compared to the SAUX with the result of them having nearly indistinguishable performance in the comparison \cref{fig:normal-normal:ws-saux}.
   	
@@ -159,7 +159,7 @@
 		\label{fig:comp_conv-normal}
 	\end{figure*}
 
-	In contrast the switch to non-one-hot encoding let to better performance of the SN, WSN, SAUX with the most significant improvement for the SN and barely significant for the WSN. The CAUX was unable to learn any significant structure from the dataset without one hot encoding. This is probably due to the fact that while one output neuron might be well suited for a binary output having ten classes differentiated using one output neuron is more difficult. For the CAUX a mixed structure (main branch fully convolutional and auxiliary classifier unchanged) could be a better solution.
+	In contrast the switch to non-one-hot encoding visible in \cref{fig:comp_normal-oh} let to better performance of the SN, WSN, SAUX with the most significant improvement for the SN and barely significant for the WSN. The CAUX was unable to learn any significant structure from the dataset without one-hot encoding. This is probably due to the fact that while one output neuron might be well suited for a binary output having ten classes differentiated using one output neuron is more difficult. For the CAUX a mixed structure (main branch fully convolutional and auxiliary classifier unchanged) could be a better solution.
 	
 	\begin{figure*}
 		\centering
@@ -189,7 +189,7 @@
 		\label{fig:comp_normal-oh}
 	\end{figure*}
 
-	With the knowledge from \cref{fig:comp_normal-oh}
+	With the knowledge from \cref{fig:comp_conv-normal,fig:comp_normal-oh} only two comparisons are required to decide on the best performing network of this analysis. Namely the comparisons between the models without one-hot encoding as shown in \cref{fig:comp_int}. We can conclude that, by a small margin the SAUX without one-hot encoding delivered on average the best results for the architectures tested in this analysis.
 
 	\begin{figure*}
 		\centering
@@ -212,8 +212,113 @@
 		\label{fig:comp_int}
 	\end{figure*}
 
+	\subsection{Conclusion}
+	Four different base architectures and their modifications where tested during this project. In the case of one-hot encoding the best performing models are WSN and SAUX with nearly indistinguishable performance. In the case of non-one-hot encoding the best performing architecture found was SAUX. 
+	
+	In both cases CAUX performed worse than SAUX and WSN which is surprising but might be changed with a more sophisticated architecture for this type of classifier.
+	
+	No significant improvement was found using fully convolutional architectures but as explained in \cref{ssec:Results1} the networks as proposed in \cref{ssec:Architectures} do not take full advantage of the possibilities provided by the convolutional layers.
+
 	\section{Project} \label{sec:Proj2}
 	\vspace{-10pt}
+	
+	\subsection{Introduction}
+	The goal of this project is to create a framework for constructing neural networks. Here, only the tensor functionalities of the PyTorch library should be used, especially not making use of the \lstinline|torch.nn| module and the autograd functions of Pytorch.
+	
+	As a Base Class 
+	
+	\begin{lstlisting}
+	class Module:
+		def __init__(self):
+			self.has_params = False
+			self.device = torch.device('cpu')
+		
+		# Defining __call__ method to keep the easy syntax for the forward prop
+		def __call__(self, *input):
+			return self.forward(*input)
+		
+		def forward(self, input):
+			raise NotImplementedError
+		
+		def backward(self, gradwrtoutput):
+			raise NotImplementedError
+		
+		def params(self):
+			return []
+	\end{lstlisting}
+	
+	was implemented as suggested in the task, the \lstinline|__call__| function was defined to be able to call the method \lstinline|forward| with \lstinline|Module()|.
+	
+	Building on that these base classes where made: 
+	
+	\begin{lstlisting}
+		class Activation(Module):
+		
+			def __call__(self, input):
+				self.x = self.forward(input)
+				return self.x
+		
+			def backward(self, prev_layer, grad, loss = False):
+				if loss:
+					return torch.einsum("ik,jk->ij", prev_layer.derivative(self.x, activation=True), grad) 
+				else:
+					return torch.einsum("ik,jk->ji", prev_layer.derivative(self.x, activation=True), grad) 
+			def to_device(self, device):
+				self.device = device
+	\end{lstlisting}
+	
+	\begin{lstlisting}
+		class Optimizer(Module):
+			def __init__(self, lr, batch_size, device=None):
+				super().__init__()
+				self.lr = torch.tensor([lr])
+				self.has_params = True
+				self.batch_size = torch.tensor([batch_size])
+		
+			def params(self):
+				return [self.lr]
+			
+			def to_device(self, device):
+				self.lr = self.lr.to(device)
+				self.batch_size = self.batch_size.to(device)
+				self.device = device
+	\end{lstlisting}	
 
+	\begin{lstlisting}
+		class Loss(Module):
+			def __init__(self, target):
+				self.target = target  # I choose this initialization to make the loss compatible with the Backpropagation 
+	\end{lstlisting} 
+	
+	\begin{lstlisting}
+		class Model(Module):
+		"""Base class for defining general models"""
+		
+			def __init__(self):
+				super().__init__()
+				self.has_params = True
+			
+			def save(self, filename, path=None):
+				if path == None:
+					with open(os.path.join(os.path.curdir, "saved_models", filename + ".pkl"), 'wb') as f:
+					pickle.dump(self, f)
+					else:
+						try:
+							with open( path + filename + ".pkl", 'wb') as f:
+								pickle.dump(self, f)
+			
+						except:
+							raise Exception("Please enter a valid path when using the optional path argument!")
+		
+	\end{lstlisting}
+	
+	These should allow too quickly add new activations, losses and optimizers if needed.
+	
+	All Modules posses a method \lstinline|to_device| which transfers all their parameters to the specified device and changes the parameter \lstinline|Module.device| to the specified device and therefore enabling CUDA support for the framework.
+	\subsection{The framework}
+	
+	There are five modules that are required to be implemented: Linear (fully connected layer), ReLU, Tanh, Sequential and LossMSE.
+	
+	
 	\printbibliography
 \end{document}
