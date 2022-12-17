@@ -132,16 +132,16 @@ scientific-notation=true,
 	stringstyle=\color[rgb]{0.627,0.126,0.941}
 }
 
-\graphicspath{{./resources/Images/}}
+\graphicspath{{./resources/images/}}
 
 \thiswatermark{\centering \put(326.5,-68.0){\includegraphics[scale=1.2]{sciences_en.png}}}
 
-\makeatletter
-\newenvironment{tablehere}
-  {\def\@captype{table}}
-  {}
-
-\newenvironment{figurehere}
-  {\def\@captype{figure}}
-  {}
-\makeatother
+\usepackage{abstract}
+\newcommand{\myabstract}[1]{
+\twocolumn[
+  \maketitle             % full width title
+  \begin{onecolabstract} % ditto abstract
+    {#1}
+  \end{onecolabstract}
+\vspace{\baselineskip}
+]}
