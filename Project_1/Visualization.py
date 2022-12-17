@@ -48,24 +48,28 @@ def plot_analysis(mean, std, epochs, nb_trials, name):
     fig.tight_layout()
     fig.savefig("./Plots/" + "Analysis_" + name.replace(' ', '_') + ".png")
 
-def plot_comparison(results1, results2, epochs, nb_trials):
-    
-    name1, mean1, std1 = results1
-    name2, mean2, std2 = results2
-    
-    fig, ax = plt.subplots(1,1, figsize=(8, 6), dpi = 80)
+
+def plot_comparison(epochs, nb_trials, *results):
+    colors=["blue", "orange", "green", "magenta"]
+    fig, ax = plt.subplots(1,1, figsize=(8, 6), dpi=80)
     plt.rcParams['font.size'] = '16'
-    x = range(1, epochs+1)
+    leg_items = []
+    leg_names = []
+    filename = "Comparison"
+    for i, res in enumerate(results):
+        name, mean, std = res
+   
+        x = range(1, epochs+1)
 
-    mean10, = ax.plot(x, mean1, color="darkblue")
-    std11, = ax.plot(x, mean1+std1, color="blue", alpha=0.97)
-    std12, = ax.plot(x, mean1-std1, color="blue", alpha=0.97)
-    fill1 = ax.fill_between(x, mean1+std1, mean1-std1, color="blue", alpha=0.5)
+        mean0, = ax.plot(x, mean, color="dark" + colors[i])
+        std1, = ax.plot(x, mean+std, color=colors[i], alpha=0.97)
+        std2, = ax.plot(x, mean-std, color=colors[i], alpha=0.97)
+        fill = ax.fill_between(x, mean+std, mean-std, color=colors[i], alpha=0.5)
 
-    mean20, = ax.plot(x, mean2, color="darkorange")
-    std21, = ax.plot(x, mean2+std2, color="orange", alpha=0.97)
-    std22, = ax.plot(x, mean2-std2, color="orange", alpha=0.97)
-    fill2 = ax.fill_between(x, mean2+std2, mean2-std2, color="orange", alpha=0.5)
+        leg_items.append((mean0, std1, std2, fill))
+        leg_names.append(name)
+
+        filename += '_' + name.replace(' ', '_')
 
     ax.set_title("Mean and standard deviation of test_accuracy after" + '\n' + "{} runs with {} epochs".format(nb_trials, epochs))
     ax.set_xlabel("Epochs")
@@ -73,7 +77,7 @@ def plot_comparison(results1, results2, epochs, nb_trials):
     ax.grid()
     ax.grid(which="minor", linestyle=':', lw=.5)
     ax.tick_params(axis="both", direction="in", top = True, right=True, which="both")
-    ax.legend([(mean10, std11, fill1 ,std12), (mean20, std21, fill2 ,std22)], [name1, name2], prop={"size":14})
+    ax.legend(leg_items, leg_names, prop={"size":14})
     fig.tight_layout()
-    fig.savefig("./Plots/" + "Comparison_" + name1.replace(' ', '_') + '_' + name2.replace(' ', '_') + ".png")
+    fig.savefig("./Plots/" + filename + ".png")
 # %%

@@ -28,7 +28,6 @@ def plot_data(data):
     #ax.grid(which="minor", linestyle=':', lw=.5)
     ax.tick_params(axis="both", direction="in", top = True, right=True, which="both")
     ax.legend([empty, train1, train0, empty, test1, test0], ["Training Data (size: " + str(train_data.shape[0]) + "):", "Target: 1",  "Target: 0" , "Test Data (size: " + str(test_data.shape[0]) + "):",  "Target: 1",  "Target: 0" ], prop={"size":14}, bbox_to_anchor=(1.05, 1.0), loc='upper left')
-    fig.savefig("./Plots/sanity_check.png")
     fig.tight_layout()
     plt.show()
 

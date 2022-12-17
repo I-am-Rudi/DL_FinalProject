@@ -25,7 +25,7 @@ def res_save(result, filename, path=None):
         except:
             raise Exception("Please enter a valid path when using the optional path argument!")
 
-def res_model(filename, path=None):
+def res_load(filename, path=None):
     if path == None:
         with open(os.path.join(os.path.curdir, "results", filename + ".pkl"), 'rb') as f:
             result = pickle.load(f)
