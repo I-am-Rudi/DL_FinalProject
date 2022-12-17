@@ -29,12 +29,12 @@
 	\end{figure} 
 
 
-	\subsection{Architectures}
+	\subsection{Architectures} \label{ssec:Architectures}
 	For the structure of the networks, four variable architectures where chosen. For all architectures there is one one version which starts with several convolutional and Batchnorm layers and is followed by linear layers, another which is fully convolutional and every architecture has the possibility to switch between several or one output neuron depending on whether one hot encoded labels are used. 
 	
-	The fully convolutional networks are created on the basis of the mixed networks at initialization through the function \lstinline|convolutionize| which is based on the \lstinline|convolutionize| function \cite{Fleuret2022} defined in the lectures. They are not transformed after training but at initialization so they are trained as fully convolutional networks.
+	The fully convolutional networks are created on the basis of the mixed networks at initialization through the function \lstinline|convolutionize| which is based on the \lstinline|convolutionize| function \cite{Fleuret2022} defined in the lectures. They are not transformed after training but at initialization so they are trained as fully convolutional networks. From this point on not calling  \lstinline|convolutionize| will be the norm for project one. Whenever fully covolutional networks are used it will be explicitly specified.
 	
-	One hot encoding is specified through the variable \lstinline|one_hot_encoding| at initialization and is enabled for all additional functions by the same variable.
+	One hot encoding is specified through the variable \lstinline|one_hot_encoding| at initialization and is enabled for all additional functions by the same variable. From this point on one hot encoding will be the norm for project one. Whenever one hot encoding is turned of it will be explicitly specified.
 	
 	All architectures use ReLU as their internal activation functions and Sigmoid as their output activation. All models are initialized with 64, 64 and 32 for the number of neurons in the main branch for the hidden Linear layers.
 	
@@ -76,35 +76,54 @@
 		\label{fig:caux}
 	\end{figure}
 
-	For both auxiliary architectures the modification specified at the start of this section are also imposed on the auxiliary classifiers.
-
+	For both auxiliary architectures the modification specified at the start of this section are also imposed on the auxiliary classifiers. Both architectures keep the structure of the WSN for the initial feature extraction.
+	
+	\subsection{Training}
+	
+	All the Architectures were trained for 100 epochs, which was repeated for 150 times while logging the test accuracy to calculate the mean values and standard deviation for the results of that experiment. The actual Training and testing is performed by the \lstinline|Teacher| class which stores the train and test data and whose methods are the actual train and test function of the model. The whole process for the analysis is performed by the \lstinline|run_analysis| function which returns the name of the model input, the mean and the standard deviation for use in further analysis or visualization. All models with one hot encoding where trained using the \lstinline|CrossEntropyLoss| optimizer and all the models without one hot encoding where trained using the \lstinline|MSELoss| optimizer.
+	
+	All models where trained with a learning rate of \lstinline|0.01| and a batch size of \lstinline|50|. These parameters remained fixed for the whole analysis in project one to keep the results as comparable as possible.
+  	
+  	\subsection{Results}
+  	
+  	As a starting point the different architectures are compared in their standard forms (one hot encoding and not fully convolutional) as specified in \cref{ssec:Architectures}. The results of this comparison can be seen in \cref{fig:comp_normal-normal}. \Cref{fig:normal-normal:sn-ws} shows the WSN performing better on average than the SN. not only does it reach a higher value at the end of the training, it also as a steeper slope for the evolution of the test accuracy. This development is consistent with the ideas behind the WSN eplained in \cref{ssec:Architectures}. 
+  	
+  	The WSN is then compared to the SAUX with the result of them having nearly indistinguishable performance in the comparison \cref{fig:normal-normal:ws-saux}.
+  	
+  	\Cref{fig:normal-normal:saux-caux} shows the comparison between SAUX and CAUX, where SAUX seems to perform better overall with both architectures starting out very similar but the SAUX plateaus less agressivly. This result is unexpected as one might guess the introduction of additional informattion might have let to a boost in performance. 
+  	
 	\begin{figure*}
 		\centering
 		\begin{subfigure}[b]{0.475\textwidth}
 			\centering
 			\includegraphics[width=\textwidth]{compare/normal-normal/Comparison_Simple_convolutional_network_Weight_sharing_network.png}
 			\caption[]%
-			{{\small Simple network}}    
+			{{\small Simple network}}
+			\label{fig:normal-normal:sn-ws}    
 		\end{subfigure}
 		\hfill
 		\begin{subfigure}[b]{0.475\textwidth}  
 			\centering 
 			\includegraphics[width=\textwidth]{compare/normal-normal/Comparison_Weight_sharing_network_Simple_Auxiliary_classifier_network.png}
 			\caption[]%
-			{{\small Weight sharing network}} 
+			{{\small Weight sharing network}}
+			\label{fig:normal-normal:ws-saux} 
 		\end{subfigure}
 		\vskip\baselineskip
 		\begin{subfigure}[b]{0.475\textwidth}   
 			\centering 
 			\includegraphics[width=\textwidth]{compare/normal-normal/Comparison_Simple_Auxiliary_classifier_network_Auxiliary_classifier_network_using_classes.png}
 			\caption[]%
-			{{\small Simple auxiliary classifier network}}    
+			{{\small Simple auxiliary classifier network}} 
+			\label{fig:normal-normal:saux-caux}   
 		\end{subfigure}
 		\hfill
 		\caption[]
-		{\small The average and standard deviation of critical parameters: Region R4} 
+		{The mean and standard deviation of the test accuracy compared over the course of 100 epochs calculated for 150 trials. For the architectures in their standard form.} 
 		\label{fig:comp_normal-normal}
 	\end{figure*}
+
+	The next group of comparisons in \cref{fig:comp_conv-normal} shows the performance of the networks from \cref{fig:comp_normal-normal} against their fully convolutional equivalent. Sadly no significant improvement in performance is observable. A reason for that might be that the networks are not taking full advantage of the possibilities of the convolutional layers as they are mere translations of the mixed architectures.
 
 	\begin{figure*}
 		\centering
@@ -139,6 +158,8 @@
 		{\small The average and standard deviation of critical parameters: Region R4} 
 		\label{fig:comp_conv-normal}
 	\end{figure*}
+
+	In contrast the switch to non-one-hot encoding let to better performance of the SN, WSN, SAUX with the most significant improvement for the SN and barely significant for the WSN. The CAUX was unable to learn any significant structure from the dataset without one hot encoding. This is probably due to the fact that while one output neuron might be well suited for a binary output having ten classes differentiated using one output neuron is more difficult. For the CAUX a mixed structure (main branch fully convolutional and auxiliary classifier unchanged) could be a better solution.
 	
 	\begin{figure*}
 		\centering
@@ -165,8 +186,10 @@
 		\hfill
 		\caption[]
 		{\small The average and standard deviation of critical parameters: Region R4} 
-		\label{fig:comp_conv-oh}
+		\label{fig:comp_normal-oh}
 	\end{figure*}
+
+	With the knowledge from \cref{fig:comp_normal-oh}
 
 	\begin{figure*}
 		\centering
