@@ -19,30 +19,139 @@
 	\section*{Project 1} \label{sec:Introduction}
 	\begin{figure}[H]
 		\centering
-		\includegraphics[width = .85\textwidth]{Simple_network.png}
-		\caption{Diagrammatic visualization of the architecture for the simple network.}
+		\includegraphics[width = .75\textwidth]{Simple_network.png}
+		\caption{Diagrammatic visualization of the architecture for the simple network. (figure made using Inkscape)}
 		\label{fig:sn}
 	\end{figure}
 	\begin{figure}[H]
 		\centering
-		\includegraphics[width = .85\textwidth]{Weight_sharing_network.png}
-		\caption{Diagrammatic visualization of the architecture for the weight sharing network.}
-		\label{fig:sn}
+		\includegraphics[width = .75\textwidth]{Weight_sharing_network.png}
+		\caption{Diagrammatic visualization of the architecture for the weight sharing network.(figure made using Inkscape)}
+		\label{fig:ws}
 	\end{figure}
 	\begin{figure}[H]
 		\centering
-		\includegraphics[width = .85\textwidth]{Simple_aux_network.png}
-		\caption{Diagrammatic visualization of the architecture for the simple auxiliary neural network.}
+		\includegraphics[width = .75\textwidth]{Simple_aux_network.png}
+		\caption{Diagrammatic visualization of the architecture for the simple auxiliary neural network.(figure made using Inkscape)}
 		\label{fig:saux}
 	\end{figure}
 	\begin{figure}[H]
 		\centering
-		\includegraphics[width = .85\textwidth]{Classes_aux_network.png}
-		\caption{Diagrammatic visualization of the architecture for the auxiliary neural network using the numbers classes.}
+		\includegraphics[width = .75\textwidth]{Classes_aux_network.png}
+		\caption{Diagrammatic visualization of the architecture for the auxiliary neural network using the numbers classes. (figure made using Inkscape)}
 		\label{fig:caux}
 	\end{figure}
+
+	\begin{figure*}
+		\centering
+		\begin{subfigure}[b]{0.475\textwidth}
+			\centering
+			\includegraphics[width=\textwidth]{compare/normal-normal/Comparison_Simple_convolutional_network_Weight_sharing_network.png}
+			\caption[]%
+			{{\small Simple network}}    
+		\end{subfigure}
+		\hfill
+		\begin{subfigure}[b]{0.475\textwidth}  
+			\centering 
+			\includegraphics[width=\textwidth]{compare/normal-normal/Comparison_Weight_sharing_network_Simple_Auxiliary_classifier_network.png}
+			\caption[]%
+			{{\small Weight sharing network}} 
+		\end{subfigure}
+		\vskip\baselineskip
+		\begin{subfigure}[b]{0.475\textwidth}   
+			\centering 
+			\includegraphics[width=\textwidth]{compare/normal-normal/Comparison_Simple_Auxiliary_classifier_network_Auxiliary_classifier_network_using_classes.png}
+			\caption[]%
+			{{\small Simple auxiliary classifier network}}    
+		\end{subfigure}
+		\hfill
+		\caption[]
+		{\small The average and standard deviation of critical parameters: Region R4} 
+		\label{fig:comp_normal-normal}
+	\end{figure*}
+
+	\begin{figure*}
+		\centering
+		\begin{subfigure}[b]{0.475\textwidth}
+			\centering
+			\includegraphics[width=\textwidth]{compare/fc-normal/Comparison_Simple_convolutional_network_Fully_convolutional_network.png}
+			\caption[]%
+			{{\small Simple network}}    
+		\end{subfigure}
+		\hfill
+		\begin{subfigure}[b]{0.475\textwidth}  
+			\centering 
+			\includegraphics[width=\textwidth]{compare/fc-normal/Comparison_Weight_sharing_network_Fully_convolutional_weight_sharing_network.png}
+			\caption[]%
+			{{\small Weight sharing network}} 
+		\end{subfigure}
+		\vskip\baselineskip
+		\begin{subfigure}[b]{0.475\textwidth}   
+			\centering 
+			\includegraphics[width=\textwidth]{compare/fc-normal/Comparison_Simple_Auxiliary_classifier_network_Fully_convolutional_auxiliary_classifier_network.png}
+			\caption[]%
+			{{\small Simple auxiliary classifier network}}    
+		\end{subfigure}
+		\hfill
+		\begin{subfigure}[b]{0.475\textwidth}   
+			\centering 
+			\includegraphics[width=\textwidth]{compare/fc-normal/Comparison_Auxiliary_classifier_network_using_classes_Fully_convolutional_auxiliary_classifier_network_using_classes.png}
+			\caption[]%
+			{{\small Auxiliary classifier network (number classes)}}    
+		\end{subfigure}
+		\caption[]
+		{\small The average and standard deviation of critical parameters: Region R4} 
+		\label{fig:comp_conv-normal}
+	\end{figure*}
 	
-	
-	\section*{References}
-	%\printbibliography[heading=none]
+	\begin{figure*}
+		\centering
+		\begin{subfigure}[b]{0.475\textwidth}
+			\centering
+			\includegraphics[width=\textwidth]{compare/oh-normal/Comparison_Simple_convolutional_network_Simple_convolutional_network_one_hot_labels=False.png}
+			\caption[]%
+			{{\small Simple network}}    
+		\end{subfigure}
+		\hfill
+		\begin{subfigure}[b]{0.475\textwidth}  
+			\centering 
+			\includegraphics[width=\textwidth]{compare/oh-normal/Comparison_Weight_sharing_network_Weight_sharing_network_one_hot_labels=False.png}
+			\caption[]%
+			{{\small Weight sharing network}} 
+		\end{subfigure}
+		\vskip\baselineskip
+		\begin{subfigure}[b]{0.475\textwidth}   
+			\centering 
+			\includegraphics[width=\textwidth]{compare/oh-normal/Comparison_Simple_Auxiliary_classifier_network_Simple_Auxiliary_classifier_network_one_hot_labels=False.png}
+			\caption[]%
+			{{\small Simple auxiliary classifier network}}    
+		\end{subfigure}
+		\hfill
+		\caption[]
+		{\small The average and standard deviation of critical parameters: Region R4} 
+		\label{fig:comp_conv-oh}
+	\end{figure*}
+
+	\begin{figure*}
+		\centering
+		\begin{subfigure}[b]{0.475\textwidth}
+			\centering
+			\includegraphics[width=\textwidth]{compare/interesting/Comparison_Simple_convolutional_network_one_hot_labels=False_Weight_sharing_network_one_hot_labels=False.png}
+			\caption[]%
+			{{\small Simple network}}    
+		\end{subfigure}
+		\hfill
+		\begin{subfigure}[b]{0.475\textwidth}  
+			\centering 
+			\includegraphics[width=\textwidth]{compare/interesting/Comparison_Weight_sharing_network_one_hot_labels=False_Simple_Auxiliary_classifier_network_one_hot_labels=False.png}
+			\caption[]%
+			{{\small Weight sharing network}} 
+		\end{subfigure}
+		\hfill
+		\caption[]
+		{\small The average and standard deviation of critical parameters: Region R4} 
+		\label{fig:comp_int}
+	\end{figure*}
+
+	%\printbibliography
 \end{document}
