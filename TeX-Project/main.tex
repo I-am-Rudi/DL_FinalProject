@@ -225,26 +225,32 @@
 	\subsection{Introduction}
 	The goal of this project is to create a framework for constructing neural networks. Here, only the tensor functionalities of the PyTorch library should be used, especially not making use of the \lstinline|torch.nn| module and the autograd functions of Pytorch.
 	
+	There are five modules that are required to be implemented: Linear (fully connected layer), ReLU, Tanh, Sequential and LossMSE.
+	
+	\subsection{The framework}
+	
+	\subsubsection{Base}
+	
 	As a Base Class 
 	
 	\begin{lstlisting}
-	class Module:
+		class Module:
 		def __init__(self):
-			self.has_params = False
-			self.device = torch.device('cpu')
+		self.has_params = False
+		self.device = torch.device('cpu')
 		
 		# Defining __call__ method to keep the easy syntax for the forward prop
 		def __call__(self, *input):
-			return self.forward(*input)
+		return self.forward(*input)
 		
 		def forward(self, input):
-			raise NotImplementedError
+		raise NotImplementedError
 		
 		def backward(self, gradwrtoutput):
-			raise NotImplementedError
+		raise NotImplementedError
 		
 		def params(self):
-			return []
+		return []
 	\end{lstlisting}
 	
 	was implemented as suggested in the task, the \lstinline|__call__| function was defined to be able to call the method \lstinline|forward| with \lstinline|Module()|.
@@ -254,70 +260,154 @@
 	\begin{lstlisting}
 		class Activation(Module):
 		
-			def __call__(self, input):
-				self.x = self.forward(input)
-				return self.x
+		def __call__(self, input):
+		self.x = self.forward(input)
+		return self.x
 		
-			def backward(self, prev_layer, grad, loss = False):
-				if loss:
-					return torch.einsum("ik,jk->ij", prev_layer.derivative(self.x, activation=True), grad) 
-				else:
-					return torch.einsum("ik,jk->ji", prev_layer.derivative(self.x, activation=True), grad) 
-			def to_device(self, device):
-				self.device = device
+		def backward(self, prev_layer, grad, loss = False):
+		if loss:
+		return torch.einsum("ik,jk->ij", prev_layer.derivative(self.x, activation=True), grad) 
+		else:
+		return torch.einsum("ik,jk->ji", prev_layer.derivative(self.x, activation=True), grad) 
+		def to_device(self, device):
+		self.device = device
 	\end{lstlisting}
 	
 	\begin{lstlisting}
 		class Optimizer(Module):
-			def __init__(self, lr, batch_size, device=None):
-				super().__init__()
-				self.lr = torch.tensor([lr])
-				self.has_params = True
-				self.batch_size = torch.tensor([batch_size])
+		def __init__(self, lr, batch_size, device=None):
+		super().__init__()
+		self.lr = torch.tensor([lr])
+		self.has_params = True
+		self.batch_size = torch.tensor([batch_size])
 		
-			def params(self):
-				return [self.lr]
-			
-			def to_device(self, device):
-				self.lr = self.lr.to(device)
-				self.batch_size = self.batch_size.to(device)
-				self.device = device
+		def params(self):
+		return [self.lr]
+		
+		def to_device(self, device):
+		self.lr = self.lr.to(device)
+		self.batch_size = self.batch_size.to(device)
+		self.device = device
 	\end{lstlisting}	
-
+	
 	\begin{lstlisting}
 		class Loss(Module):
-			def __init__(self, target):
-				self.target = target  # I choose this initialization to make the loss compatible with the Backpropagation 
+		def __init__(self, target):
+		self.target = target  # I choose this initialization to make the loss compatible with the Backpropagation 
 	\end{lstlisting} 
 	
 	\begin{lstlisting}
 		class Model(Module):
 		"""Base class for defining general models"""
 		
-			def __init__(self):
-				super().__init__()
-				self.has_params = True
-			
-			def save(self, filename, path=None):
-				if path == None:
-					with open(os.path.join(os.path.curdir, "saved_models", filename + ".pkl"), 'wb') as f:
-					pickle.dump(self, f)
-					else:
-						try:
-							with open( path + filename + ".pkl", 'wb') as f:
-								pickle.dump(self, f)
-			
-						except:
-							raise Exception("Please enter a valid path when using the optional path argument!")
+		def __init__(self):
+		super().__init__()
+		self.has_params = True
+		
+		def save(self, filename, path=None):
+		if path == None:
+		with open(os.path.join(os.path.curdir, "saved_models", filename + ".pkl"), 'wb') as f:
+		pickle.dump(self, f)
+		else:
+		try:
+		with open( path + filename + ".pkl", 'wb') as f:
+		pickle.dump(self, f)
+		
+		except:
+		raise Exception("Please enter a valid path when using the optional path argument!")
 	\end{lstlisting}
 	
-	These should allow too quickly add new activations, losses, optimizers and more complex models than Sequential if needed.
+	They should allow too add new activations, losses, optimizers and more complex models than Sequential more quickly if needed. The model class provides a save function to store a model using the pickle library. The model can then be loaded into a variable using the \lstinline|load_model| function.
 	
-	All Modules posses a method \lstinline|to_device| which transfers all their parameters to the specified device and changes the parameter \lstinline|Module.device| to the specified device and therefore enabling CUDA support for the framework.
-	\subsection{The framework}
+	All Modules posses a method \lstinline|to_device| which transfers all their parameters to the specified device and changes the parameter \lstinline|Module.device| to the specified device and therefore enabling CUDA support for the framework. All Modules posses a forward and a backward method except for \lstinline|Loss| and \lstinline|Optimizer|. All classes that can act as layers of a network and the loss are implemented with a method that returns their derivative.
 	
-	There are five modules that are required to be implemented: Linear (fully connected layer), ReLU, Tanh, Sequential and LossMSE.
+	The forward propagation for the modules is fairly straight forward as the definitions of the required functions are well known and can just be translated into code from the literature \cite{Fleuret2022,Goodfellow-et-al-2016}. With the only addition that the respective results are stored inside the class object for later use in the backward pass. Two forward methods might be worth mentioning. For the Tanh it is implemented using a second class for Sigmoid as they are closely related and then the Sigmoid function is implemented two without additional effort.
 	
+	\begin{lstlisting}
+		class Sigmoid(Activation):
+		
+		def forward(self, input):
+		return 1/(1+torch.exp(-input))
+		
+		def derivative(self, input, activation = False):
+		if activation:
+		raise Exception("Chaining of two activation functions directly after one another!")
+		
+		return self.forward(input) * (1 - self.forward(input))
+		
+		class Tanh(Activation):
+		
+		def __init__(self):
+		super().__init__()
+		self.sigmoid = Sigmoid()
+		
+		def forward(self, input):
+		return 2 * self.sigmoid.forward(2 * input) - 1
+		
+		def derivative(self, input, activation = False):
+		if activation:
+		raise Exception("Chaining of two activation functions directly after one another!")
+		
+		return 4 * self.sigmoid.derivative(2*input)  # chain rule  
+	\end{lstlisting}
 	
+	And the forward call of Sequential, which just consists of calling all the layers forward calls one after the other.
+	
+	\begin{lstlisting}
+		def forward(self, input):
+		for layer in self.layers:
+		input = layer(input)
+		
+		return input
+	\end{lstlisting}
+
+	In contrast the backward propagation is way more nuanced. The general equations can be found in various resources like \cite{Fleuret2022,Goodfellow-et-al-2016}. For the case of the sequential model a more or less simple implementation is possible. Except for the first step of the backward propagation which includes the loss at every step corresponding to a layer the gradient (of at least one parameter) is calculated using only the derivative of the previous layer, the gradient of the previous layer and information and the forward pass result of the current layer (the direction being backwards in the graph). 
+	
+	Therefore we can make use of the already implemented derivative method and pass the previous layer as well as the gradient of its backward pass to the backward method of the current layer and use the information that has been stored during the forward pass. With one addition: When two Linear layers follow each other the previous one returns \lstinline|1| as its derivative, we can account for most possible architectures that can be created using \lstinline|Sequential|.
+	
+	Then for the linear layer the backward pass is implemented as:
+	
+	\begin{lstlisting}
+		def backward(self, prev_layer, grad):
+		self.db = prev_layer.derivative(self.s) * grad
+		#self.db = torch.einsum("ik,jk->ij", prev_layer.derivative(self.s), grad)
+		self.dw = torch.einsum('ik,ij->ikj', self.db, self.x)
+		return self.db
+	\end{lstlisting} 
+	
+	The activation backward pass is implemented as:
+	
+	\begin{lstlisting}
+		def backward(self, prev_layer, grad, loss = False):
+		if loss:
+		return torch.einsum("ik,jk->ij", prev_layer.derivative(self.x, activation=True), grad) 
+		else:
+		return torch.einsum("ik,jk->ji", prev_layer.derivative(self.x, activation=True), grad) 
+	\end{lstlisting}
+
+	To get the backward pass for the whole Sequential model we use these methods in the \lstinline|Sequential.backward| method:
+	
+	\begin{lstlisting}
+		def backward(self, loss):  # the loss functions will be initialized with target, they get one parameter as an instance which will be the output
+		
+		grads = [torch.tensor([1]).unsqueeze(1).to(self.device)]  # makes the Backprop of the loss work even if the ouput layers is not an activation
+		self.layers.append(loss)
+		self.layers = self.layers[::-1]
+		
+		for i in range(1, len(self.layers)):
+		if i == 1:
+		grads.append(self.layers[i].backward(self.layers[i-1], grads[i-1], loss = True))
+		else:
+		grads.append(self.layers[i].backward(self.layers[i-1], grads[i-1]))
+		
+		
+		self.layers = self.layers[::-1]
+		self.layers = self.layers[:-1]  # reformat the layer variable
+		grads = grads[1:]
+		grads = grads[::-1]
+		return grads
+	\end{lstlisting}
+	
+	After the g
 	\printbibliography
 \end{document}
