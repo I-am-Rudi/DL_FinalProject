@@ -309,10 +309,9 @@
 			
 						except:
 							raise Exception("Please enter a valid path when using the optional path argument!")
-		
 	\end{lstlisting}
 	
-	These should allow too quickly add new activations, losses and optimizers if needed.
+	These should allow too quickly add new activations, losses, optimizers and more complex models than Sequential if needed.
 	
 	All Modules posses a method \lstinline|to_device| which transfers all their parameters to the specified device and changes the parameter \lstinline|Module.device| to the specified device and therefore enabling CUDA support for the framework.
 	\subsection{The framework}
