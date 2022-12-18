@@ -22,7 +22,7 @@ def mnist_to_pairs(nb, train, target, one_hot_labels = True):
     classes = target[a]
     
     pairs = input
-    # create new targsets (doing it after the removal throws an error if the removal is flawed)
+    # create new targsets
     target = (classes[:, 0] > classes[:, 1]).long()
     
     if one_hot_labels:

@@ -19,13 +19,13 @@ def plot_data(data):
             test1 = ax.scatter(test_data[i,0], test_data[i,1], color = "darkorange")
         else:    
             test0 = ax.scatter(test_data[i,0], test_data[i,1], color = "darkorange", facecolors='none')
-    empty = ax.scatter(1, 1, color = "none")
+    
+    empty = ax.scatter(1, 1, color = "none")  # creating an artificial line break for legend
+    
     ax.set_xlim([0, 1])
     ax.set_ylim([0, 1])
     ax.set_xlabel("x")
     ax.set_ylabel("y")
-    #ax.grid()
-    #ax.grid(which="minor", linestyle=':', lw=.5)
     ax.tick_params(axis="both", direction="in", top = True, right=True, which="both")
     ax.legend([empty, train1, train0, empty, test1, test0], ["Training Data (size: " + str(train_data.shape[0]) + "):", "Target: 1",  "Target: 0" , "Test Data (size: " + str(test_data.shape[0]) + "):",  "Target: 1",  "Target: 0" ], prop={"size":14}, bbox_to_anchor=(1.05, 1.0), loc='upper left')
     fig.tight_layout()

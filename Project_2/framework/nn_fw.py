@@ -34,6 +34,7 @@ class Module:
     
     def params(self):
         return []
+
 class Linear(Module):
     def __init__(self, in_size, out_size, bias=True):
         super().__init__()
@@ -69,7 +70,6 @@ class Linear(Module):
 
     def backward(self, prev_layer, grad):
         self.db = prev_layer.derivative(self.s) * grad
-        #self.db = torch.einsum("ik,jk->ij", prev_layer.derivative(self.s), grad)
         self.dw = torch.einsum('ik,ij->ikj', self.db, self.x)
         return self.db
     
@@ -161,6 +161,7 @@ class Sequential(Model):
         for layer in self.layers:
             layer.to_device(device)
         self.device = device
+
 ################################################################
 # Optimizer
 ################################################################
@@ -193,6 +194,7 @@ class Loss(Module):
     def __init__(self, target):
         #super().__init__(self)
         self.target = target  # I choose this initialization to make the loss compatible with the Backpropagation 
+
 class MSE(Loss):
 
     def forward(self, pred):

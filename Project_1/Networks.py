@@ -2,8 +2,7 @@ import os
 import pickle #  for storing and loading networks
 
 # torch 
-import torch # pytorch package, allows using GPUs
-import torch.nn.functional as F # implements forward and backward definitions of an autograd operation
+import torch 
 from torch import nn, optim
 from torch.nn.modules import Module
 from torchvision import datasets # load data
@@ -47,7 +46,6 @@ class LinearBase(nn.Module):
         self.is_aux = False
         self.is_classes = False
 
-        #flatten and full connected layers
         self.layers = nn.ModuleList()
         
         if not fconv:
@@ -168,7 +166,7 @@ class Ws_model(LinearBase):
 class Class_aux_model(LinearBase):
     def __init__(self, lin_layers, activation = nn.ReLU(), out_activation = nn.Sigmoid(), device=None, one_hot_labels = True, fconv=False):
         super().__init__(lin_layers, activation, out_activation, device, one_hot_labels, fconv)  # call Linear Base constructor
-        
+        ########### helpful parameters ###############
         self.is_aux = True
         self.is_classes = True 
         self.name = "Auxiliary classifier network using classes"
@@ -239,8 +237,8 @@ class Simple_aux_model(LinearBase):
     def __init__(self, lin_layers, activation = nn.ReLU(), out_activation = nn.Sigmoid(), device=None, one_hot_labels = True, fconv=False):
         super().__init__(lin_layers, activation, out_activation, device, one_hot_labels, fconv)  # call Linear Base constructor
         
+        ########### helpful parameters ###############
         self.is_aux = True
-
         self.name = "Simple Auxiliary classifier network"
 
         ########### setting up blocks ###########

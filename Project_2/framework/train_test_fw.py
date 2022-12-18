@@ -1,4 +1,4 @@
-import torch # pytorch package, allows using GPUs
+import torch 
 from visualization import *
 import framework.nn_fw as nn
 
@@ -32,7 +32,7 @@ class Teacher():
         self.device = device
 
     def train(self, model, lr):
-        
+        '''Trains NN.'''
         num_errors=0
         for inputs, targets in zip(self.train_data.split(self.batch_size), self.train_target.split(self.batch_size)):
             
@@ -64,7 +64,6 @@ class Teacher():
             loss = self.loss(targets)
             test_loss += loss(output)
 
-            # find most likely prediction
             num_errors += compute_nb_errors(output, targets)
 
         return test_loss, 1 - num_errors/self.test_data.shape[0]

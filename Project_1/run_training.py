@@ -1,5 +1,5 @@
 # torch 
-import torch # pytorch package, allows using GPUs
+import torch # pytorch package
 from torch import nn, optim
 from torch.nn.modules import Module
 import torch.optim as optim
@@ -64,6 +64,7 @@ class Teacher():
         self.one_hot_labels = one_hot_labels
 
     def train(self, model, batch_size):
+        '''Train NN'''
         model.train()
         num_correct=0
         for inputs, targets, classes in zip(self.train_data.split(batch_size), self.train_target.split(batch_size), self.train_classes.split(batch_size)):
