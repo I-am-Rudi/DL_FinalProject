@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 def plot_data(data):
     train_data, train_target, test_data, test_target = data
     plt.rcParams['font.size'] = '16'
-    fig, ax = plt.subplots(figsize=(12, 12))
+    fig, ax = plt.subplots(figsize=(10, 10))
 
     ax.set_aspect( 1 )
     ax.add_artist( plt.Circle( (.5, .5 ), 1/(2*torch.pi)**(1/2), fill = False ) )
